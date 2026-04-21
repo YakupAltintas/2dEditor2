@@ -20,61 +20,45 @@ public class ShapeNode extends SceneNode {
         p.fill(fillColor);
         p.stroke(255, 50);
         if (type.equals("rect")) {
-            p.box(w, h, 20); // 2D Dikdörtgen yerine 3D Kutu
+            p.box(w, h, w);
         } else if (type.equals("triangle")) {
-            // Üçgen prizma simülasyonu
-            p.beginShape();
-            p.vertex(0, -h/2, 10); p.vertex(-w/2, h/2, 10); p.vertex(w/2, h/2, 10);
-            p.endShape(PConstants.CLOSE);
-            p.beginShape();
-            p.vertex(0, -h/2, -10); p.vertex(-w/2, h/2, -10); p.vertex(w/2, h/2, -10);
-            p.endShape(PConstants.CLOSE);
+            drawPrism(p, w, h, w/2);
         } else {
             p.sphere(w/2);
         }
+    }
+
+    private void drawPrism(PApplet p, float w, float h, float d) {
+        p.beginShape();
+        p.vertex(0, -h/2, d); p.vertex(-w/2, h/2, d); p.vertex(w/2, h/2, d);
+        p.endShape(PConstants.CLOSE);
+        p.beginShape();
+        p.vertex(0, -h/2, -d); p.vertex(-w/2, h/2, -d); p.vertex(w/2, h/2, -d);
+        p.endShape(PConstants.CLOSE);
+        p.beginShape(PConstants.QUAD_STRIP);
+        p.vertex(0, -h/2, d); p.vertex(0, -h/2, -d);
+        p.vertex(-w/2, h/2, d); p.vertex(-w/2, h/2, -d);
+        p.vertex(w/2, h/2, d); p.vertex(w/2, h/2, -d);
+        p.vertex(0, -h/2, d); p.vertex(0, -h/2, -d);
+        p.endShape();
     }
 
     @Override
     public void drawHighlight(PApplet p) {
         p.noFill();
         p.stroke(255, 255, 0);
-        p.strokeWeight(1);
-        
+        p.strokeWeight(2);
         if (type.equals("rect")) {
-            p.box(w + 10, h + 10, 30);
+            p.box(w + 5, h + 5, w + 5);
         } else if (type.equals("triangle")) {
-            float tw = w + 15;
-            float th = h + 15;
-            p.beginShape();
-            p.vertex(0, -th/2, 15); p.vertex(-tw/2, th/2, 15); p.vertex(tw/2, th/2, 15);
-            p.endShape(PConstants.CLOSE);
-            p.beginShape();
-            p.vertex(0, -th/2, -15); p.vertex(-tw/2, th/2, -15); p.vertex(tw/2, th/2, -15);
-            p.endShape(PConstants.CLOSE);
+            drawPrism(p, w + 5, h + 5, w/2 + 5);
         } else {
             p.sphereDetail(12);
             p.sphere(w/2 + 5);
         }
     }
 
-    @Override
-    protected boolean isInside(float lx, float ly) {
-        // Basit bounding box kontrolü
-        return lx >= -w/2 && lx <= w/2 && ly >= -h/2 && ly <= h/2;
-    }
-
-    @Override
-    public SceneNode copy() {
-        ShapeNode n = new ShapeNode(name, type, w, h, fillColor);
-        n.pos = pos.copy();
-        n.rot = rot;
-        n.scale = scale.copy();
-        n.pivot = pivot.copy();
-        n.isAnimating = isAnimating;
-        n.rotationSpeed = rotationSpeed;
-        for (SceneNode child : children) {
-            n.addChild(child.copy());
-        }
-        return n;
+    public ShapeNode copySelf() {
+        return new ShapeNode(name, type, w, h, fillColor);
     }
 }

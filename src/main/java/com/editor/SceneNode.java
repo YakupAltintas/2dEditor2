@@ -5,10 +5,10 @@ import java.util.*;
 
 public class SceneNode {
     public String name = "Node";
-    public PVector pos = new PVector(0, 0);
+    public PVector pos = new PVector(0, 0, 0);
     public float rot = 0;
-    public PVector scale = new PVector(1, 1);
-    public PVector pivot = new PVector(0, 0);
+    public PVector scale = new PVector(1, 1, 1);
+    public PVector pivot = new PVector(0, 0, 0);
     public boolean isAnimating = false;
     public float rotationSpeed = 0.02f;
     
@@ -24,7 +24,6 @@ public class SceneNode {
         PMatrix3D m = new PMatrix3D();
         m.translate(pos.x, pos.y, pos.z);
         m.rotateZ(rot);
-        // Uniform scale across all axes to prevent distortion
         m.scale(scale.x, scale.y, scale.z);
         m.translate(-pivot.x, -pivot.y, -pivot.z);
         return m;
@@ -46,11 +45,11 @@ public class SceneNode {
     public void display(PApplet p) {
         p.pushMatrix();
         p.applyMatrix(getLocalMatrix());
-        
         drawNode(p);
         
-        p.fill(255, 0, 0);
-        p.ellipse(pivot.x, pivot.y, 5, 5);
+        // Draw pivot
+        p.stroke(255, 0, 0);
+        p.point(pivot.x, pivot.y, pivot.z);
         
         for (SceneNode child : children) {
             child.display(p);
@@ -59,27 +58,22 @@ public class SceneNode {
     }
 
     protected void drawNode(PApplet p) {}
-
     public void drawHighlight(PApplet p) {}
 
     public boolean contains(PApplet p, float mx, float my) {
-        // Get screen position of node center (0,0,0)
         float sx = p.screenX(0, 0, 0);
         float sy = p.screenY(0, 0, 0);
-        
         if (this instanceof ShapeNode) {
             ShapeNode sn = (ShapeNode)this;
-            // Calculate hit threshold based on shape size and scale
             float threshold = (sn.w + sn.h) / 4.0f * scale.x;
             return p.dist(mx, my, sx, sy) < threshold;
         }
         return false;
     }
 
-    protected boolean isInside(float lx, float ly) { return false; }
-    
     public SceneNode copy() {
-        SceneNode n = new SceneNode();
+        SceneNode n = (this instanceof ShapeNode) ? 
+            ((ShapeNode)this).copySelf() : new SceneNode();
         n.name = this.name;
         n.pos = pos.copy();
         n.rot = rot;
