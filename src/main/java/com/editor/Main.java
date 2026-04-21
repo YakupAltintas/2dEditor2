@@ -73,14 +73,12 @@ public class Main extends PApplet {
         }
 
         pushMatrix();
-        // Apply Camera Position Only for Grid (Facing Camera)
+        // Apply Camera and Scene Transform (Centered at 0,0,0)
         translate(width/2 + camX, height/2 + camY, camZ);
-        drawGrid(); 
-        
-        // Apply Camera Rotation and Scene Content
         rotateX(camRotX);
         rotateY(camRotY);
         
+        drawGrid();
         root.update();
         root.display(this);
         drawSelectionHighlight();
