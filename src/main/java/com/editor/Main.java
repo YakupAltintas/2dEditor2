@@ -14,9 +14,11 @@ public class Main extends PApplet {
 
     public void settings() {
         size(800, 600);
+        smooth(8);
     }
 
     public void setup() {
+        pixelDensity(displayDensity());
         root = new SceneNode();
         root.name = "Root";
 
