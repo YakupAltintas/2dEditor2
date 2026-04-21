@@ -28,7 +28,7 @@ public class Main extends PApplet {
         root.name = "Root";
 
         ShapeNode sun = new ShapeNode("Sun", "ellipse", 100, 100, color(255, 200, 0));
-        sun.pos.set(width/2, height/2, 0);
+        sun.pos.set(0, 0, 0);
         sun.isAnimating = true;
         sun.rotationSpeed = 0.01f;
         
