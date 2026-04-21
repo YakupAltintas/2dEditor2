@@ -8,9 +8,9 @@ public class Main extends PApplet {
     SceneNode selectedNode;
     Stack<SceneNode> undoStack = new Stack<>();
     
-    // Camera/Navigation variables
-    float camX = 0, camY = 0, camZ = 0;
-    float camRotY = 0, camRotX = PI/6;
+    // Kamera: Dunya koordinatlarindaki konum ve bakis acilari
+    float camX = 0, camY = 0, camZ = 400;
+    float camRotY = 0, camRotX = 0;
     boolean[] keyState = new boolean[1024];
     
     public static void main(String[] args) {
@@ -29,22 +29,22 @@ public class Main extends PApplet {
     }
 
     void resetScene() {
-        camX = 0; camY = 0; camZ = 0;
-        camRotX = PI/6; camRotY = 0;
+        camX = 0; camY = 0; camZ = 400;
+        camRotX = 0; camRotY = 0;
         root = new SceneNode();
         root.name = "Root";
 
-        ShapeNode sun = new ShapeNode("Sun", "ellipse", 100, 100, color(255, 200, 0));
+        ShapeNode sun = new ShapeNode("Gunes", "ellipse", 100, 100, color(255, 200, 0));
         sun.pos.set(0, 0, 0);
         sun.isAnimating = true;
         sun.rotationSpeed = 0.01f;
         
-        ShapeNode earth = new ShapeNode("Earth", "ellipse", 40, 40, color(0, 150, 255));
+        ShapeNode earth = new ShapeNode("Dunya", "ellipse", 40, 40, color(0, 150, 255));
         earth.pos.set(180, 0, 0);
         earth.isAnimating = true;
         earth.rotationSpeed = 0.03f;
         
-        ShapeNode moon = new ShapeNode("Moon", "rect", 15, 15, color(200));
+        ShapeNode moon = new ShapeNode("Ay", "rect", 15, 15, color(200));
         moon.pos.set(50, 0, 0);
         moon.isAnimating = true;
         moon.rotationSpeed = 0.08f;
@@ -52,32 +52,52 @@ public class Main extends PApplet {
         root.addChild(sun);
         sun.addChild(earth);
         earth.addChild(moon);
-        
         selectedNode = sun;
         saveState();
+    }
+
+    // Kamerayi bakis acisina gore hareket ettirir (3D Fly-Cam)
+    void updateCamera() {
+        if (mousePressed && mouseButton == LEFT) {
+            float speed = 5.0f;
+            
+            // İleri Vektörü (Forward)
+            float fx = sin(camRotY) * cos(camRotX);
+            float fy = -sin(camRotX);
+            float fz = -cos(camRotY) * cos(camRotX);
+            
+            // Sağ Vektörü (Right)
+            float rx = cos(camRotY);
+            float rz = sin(camRotY);
+            
+            // Yukarı Vektörü (Up)
+            float ux = sin(camRotY) * sin(camRotX);
+            float uy = cos(camRotX);
+            float uz = -cos(camRotY) * sin(camRotX);
+
+            if (keyState['w'] || keyState['W']) { camX += fx * speed; camY += fy * speed; camZ += fz * speed; }
+            if (keyState['s'] || keyState['S']) { camX -= fx * speed; camY -= fy * speed; camZ -= fz * speed; }
+            if (keyState['a'] || keyState['A']) { camX -= rx * speed; camZ -= rz * speed; }
+            if (keyState['d'] || keyState['D']) { camX += rx * speed; camZ += rz * speed; }
+            if (keyState['q'] || keyState['Q']) { camX += ux * speed; camY += uy * speed; camZ += uz * speed; }
+            if (keyState['e'] || keyState['E']) { camX -= ux * speed; camY -= uy * speed; camZ -= uz * speed; }
+        }
+    }
+
+    void applyCameraTransforms() {
+        translate(width/2, height/2, 0);
+        rotateX(camRotX);
+        rotateY(camRotY);
+        translate(-camX, -camY, -camZ);
     }
 
     public void draw() {
         background(20);
         lights();
-        
-        // Handle Scene Navigation (Unity-style)
-        if (mousePressed && mouseButton == LEFT) {
-            float speed = 5.0f;
-            if (keyState['w'] || keyState['W']) camZ += speed;
-            if (keyState['s'] || keyState['S']) camZ -= speed;
-            if (keyState['a'] || keyState['A']) camX += speed;
-            if (keyState['d'] || keyState['D']) camX -= speed;
-            if (keyState['q'] || keyState['Q']) camY += speed;
-            if (keyState['e'] || keyState['E']) camY -= speed;
-        }
+        updateCamera();
 
         pushMatrix();
-        // Apply Camera and Scene Transform (Centered at 0,0,0)
-        translate(width/2 + camX, height/2 + camY, camZ);
-        rotateX(camRotX);
-        rotateY(camRotY);
-        
+        applyCameraTransforms();
         drawGrid();
         root.update();
         root.display(this);
@@ -89,19 +109,14 @@ public class Main extends PApplet {
 
     void drawGrid() {
         stroke(50);
-        int range = 2000; // Geniş kapsamlı ızgara
-        int step = 40;
-        
-        // Yatay ve Dikey çizgiler (Orijin merkezli)
+        int range = 2000, step = 40;
         for(int i = -range; i <= range; i += step) {
             line(i, -range, 0, i, range, 0);
             line(-range, i, 0, range, i, 0);
         }
-        
-        // Eksen çizgileri
         strokeWeight(2);
-        stroke(0, 255, 0); line(0, -range, 0, 0, range, 0); // Y Ekseni (Yeşil)
-        stroke(255, 0, 0); line(-range, 0, 0, range, 0, 0); // X Ekseni (Kırmızı)
+        stroke(0, 255, 0); line(0, -range, 0, 0, range, 0);
+        stroke(255, 0, 0); line(-range, 0, 0, range, 0, 0);
         strokeWeight(1);
     }
 
@@ -116,31 +131,21 @@ public class Main extends PApplet {
 
     void drawUI() {
         hint(PConstants.DISABLE_DEPTH_TEST);
-        fill(255);
-        textSize(12);
+        fill(255); textSize(12);
         text("SECILI: " + (selectedNode != null ? selectedNode.name : "Yok"), 20, 25);
-        text("GEZINTI: Sol Tik Basili + WASD (Yatay), QE (Dikey)", 20, 45);
-        text("DUZENLE: Oklar (Tasi), W/S (Olcek), A/D (Don), P (Pivot), L (Anim), U (Geri Al), DEL (Sil), R (Sifirla)", 20, 65);
+        text("GEZINTI: Sol Tik + WASD (Bakisa Gore Hareket), QE (Yukari/Asagi)", 20, 45);
+        text("DUZENLE: Sag Tik/Oklar (Tasi), W/S (Olcek), A/D (Don), P (Pivot), L (Anim), U (Geri), DEL (Sil), R (Sifirla)", 20, 65);
         text("EKLE: 1 (Kare), 2 (Daire), 3 (Ucgen)", 20, 85);
-        
-        if (selectedNode != null) {
-            PMatrix3D m = selectedNode.getLocalMatrix();
-            text("3D MATRIS (Rotasyon/Olcek):", 20, 115);
-            text(String.format("[%.2f, %.2f, %.2f]", m.m00, m.m01, m.m02), 20, 135);
-            text(String.format("[%.2f, %.2f, %.2f]", m.m10, m.m11, m.m12), 20, 155);
-            text(String.format("[%.2f, %.2f, %.2f]", m.m20, m.m21, m.m22), 20, 175);
-        }
         hint(PConstants.ENABLE_DEPTH_TEST);
     }
 
     public void mousePressed() {
-        // Match the transforms applied in draw()
-        pushMatrix();
-        translate(width/2 + camX, height/2 + camY, camZ);
-        rotateX(camRotX);
-        rotateY(camRotY);
-        selectedNode = findNode(root, mouseX, mouseY);
-        popMatrix();
+        if (mouseButton == LEFT) {
+            pushMatrix();
+            applyCameraTransforms();
+            selectedNode = findNode(root, mouseX, mouseY);
+            popMatrix();
+        }
     }
 
     SceneNode findNode(SceneNode current, float mx, float my) {
@@ -158,7 +163,6 @@ public class Main extends PApplet {
 
     public void keyPressed() {
         if (key < 1024) keyState[key] = true;
-
         if (key == '1') addNewShape("rect");
         if (key == '2') addNewShape("ellipse");
         if (key == '3') addNewShape("triangle");
@@ -178,15 +182,12 @@ public class Main extends PApplet {
         }
         
         boolean changed = false;
-        // Only allow editing transforms if NOT in navigation mode (Left Click held)
-        boolean isNavigating = mousePressed && mouseButton == LEFT;
-        
         if (keyCode == UP) { selectedNode.pos.y -= 5; changed = true; }
         if (keyCode == DOWN) { selectedNode.pos.y += 5; changed = true; }
         if (keyCode == LEFT) { selectedNode.pos.x -= 5; changed = true; }
         if (keyCode == RIGHT) { selectedNode.pos.x += 5; changed = true; }
         
-        if (!isNavigating) {
+        if (!(mousePressed && mouseButton == LEFT)) {
             if (key == 'w' || key == 'W') { selectedNode.scale.add(0.05f, 0.05f, 0.05f); changed = true; }
             if (key == 's' || key == 'S') { selectedNode.scale.sub(0.05f, 0.05f, 0.05f); changed = true; }
             if (key == 'a' || key == 'A') { selectedNode.rot -= 0.1f; changed = true; }
@@ -195,6 +196,7 @@ public class Main extends PApplet {
         
         if (key == 'p' || key == 'P') {
             pushMatrix();
+            applyCameraTransforms();
             applyMatrix(selectedNode.getGlobalMatrix());
             PMatrix3D inv = selectedNode.getGlobalMatrix();
             inv.invert();
@@ -214,26 +216,18 @@ public class Main extends PApplet {
 
     void addNewShape(String type) {
         int c = color(random(100, 255), random(100, 255), random(100, 255));
-        ShapeNode newNode = new ShapeNode("New " + type, type, 50, 50, c);
+        ShapeNode newNode = new ShapeNode("Yeni " + type, type, 50, 50, c);
         SceneNode parentNode = (selectedNode != null) ? selectedNode : root;
         
         pushMatrix();
-        // Must include camera transforms for correct placement
-        translate(width/2 + camX, height/2 + camY, camZ);
-        rotateX(camRotX);
-        rotateY(camRotY);
-        
+        applyCameraTransforms();
         applyMatrix(parentNode.getGlobalMatrix());
         
         PMatrix3D totalM = new PMatrix3D();
-        getMatrix(totalM);
-        totalM.invert();
+        getMatrix(totalM); totalM.invert();
         
         PVector localPos = new PVector(totalM.multX(mouseX, mouseY, 0), totalM.multY(mouseX, mouseY, 0), 0);
-        // Limit the distance from parent to keep satellites close
-        if (parentNode != root) {
-            localPos.limit(120);
-        }
+        if (parentNode != root) localPos.limit(120);
         newNode.pos.set(localPos);
         popMatrix();
 
@@ -261,43 +255,23 @@ public class Main extends PApplet {
 
     public void mouseDragged() {
         if (mouseButton == LEFT) {
-            boolean isNavMode = keyState['w'] || keyState['a'] || keyState['s'] || keyState['d'] || keyState['q'] || keyState['e'];
-            
-            if (selectedNode != null && !isNavMode) {
-                pushMatrix();
-                // Apply same scene transforms as in draw()
-                translate(width/2 + camX, height/2 + camY, camZ);
-                rotateX(camRotX);
-                rotateY(camRotY);
-            
-            // Apply parent's global matrix to get to the coordinate system where selectedNode.pos lives
-            if (selectedNode.parent != null) {
-                applyMatrix(selectedNode.parent.getGlobalMatrix());
-            }
-
+            // Kamera dondurme (Yatay ve Dikey)
+            camRotY += (mouseX - pmouseX) * 0.01f;
+            camRotX -= (mouseY - pmouseY) * 0.01f;
+        } else if (mouseButton == RIGHT && selectedNode != null) {
+            pushMatrix();
+            applyCameraTransforms();
+            if (selectedNode.parent != null) applyMatrix(selectedNode.parent.getGlobalMatrix());
             PMatrix3D totalM = new PMatrix3D();
-            getMatrix(totalM);
-            totalM.invert();
-            
-            // Project current and previous mouse positions into local space
-            float x1 = totalM.multX(pmouseX, pmouseY, 0);
-            float y1 = totalM.multY(pmouseX, pmouseY, 0);
-            float x2 = totalM.multX(mouseX, mouseY, 0);
-            float y2 = totalM.multY(mouseX, mouseY, 0);
-            
-            // Update position based on local delta
-            selectedNode.pos.x += (x2 - x1);
-                selectedNode.pos.y += (y2 - y1);
-                popMatrix();
-            } else {
-                // Camera Rotation
-                camRotY += (mouseX - pmouseX) * 0.01f;
-                camRotX -= (mouseY - pmouseY) * 0.01f;
-            }
+            getMatrix(totalM); totalM.invert();
+            float x1 = totalM.multX(pmouseX, pmouseY, 0), y1 = totalM.multY(pmouseX, pmouseY, 0);
+            float x2 = totalM.multX(mouseX, mouseY, 0), y2 = totalM.multY(mouseX, mouseY, 0);
+            selectedNode.pos.x += (x2 - x1); selectedNode.pos.y += (y2 - y1);
+            popMatrix();
         }
     }
-    
+
     public void mouseReleased() {
-        if (mouseButton == LEFT) saveState();
+        saveState();
     }
 }

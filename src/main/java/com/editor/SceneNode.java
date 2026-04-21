@@ -46,14 +46,9 @@ public class SceneNode {
         p.pushMatrix();
         p.applyMatrix(getLocalMatrix());
         drawNode(p);
-        
-        // Draw pivot
         p.stroke(255, 0, 0);
         p.point(pivot.x, pivot.y, pivot.z);
-        
-        for (SceneNode child : children) {
-            child.display(p);
-        }
+        for (SceneNode child : children) child.display(p);
         p.popMatrix();
     }
 
@@ -65,15 +60,14 @@ public class SceneNode {
         float sy = p.screenY(0, 0, 0);
         if (this instanceof ShapeNode) {
             ShapeNode sn = (ShapeNode)this;
-            float threshold = (sn.w + sn.h) / 4.0f * scale.x;
+            float threshold = (sn.w + sn.h) / 2.0f * scale.x;
             return p.dist(mx, my, sx, sy) < threshold;
         }
         return false;
     }
 
     public SceneNode copy() {
-        SceneNode n = (this instanceof ShapeNode) ? 
-            ((ShapeNode)this).copySelf() : new SceneNode();
+        SceneNode n = (this instanceof ShapeNode) ? ((ShapeNode)this).copySelf() : new SceneNode();
         n.name = this.name;
         n.pos = pos.copy();
         n.rot = rot;
@@ -81,9 +75,7 @@ public class SceneNode {
         n.pivot = pivot.copy();
         n.isAnimating = isAnimating;
         n.rotationSpeed = rotationSpeed;
-        for (SceneNode child : children) {
-            n.addChild(child.copy());
-        }
+        for (SceneNode child : children) n.addChild(child.copy());
         return n;
     }
 }

@@ -19,13 +19,9 @@ public class ShapeNode extends SceneNode {
     protected void drawNode(PApplet p) {
         p.fill(fillColor);
         p.stroke(255, 50);
-        if (type.equals("rect")) {
-            p.box(w, h, w);
-        } else if (type.equals("triangle")) {
-            drawPrism(p, w, h, w/2);
-        } else {
-            p.sphere(w/2);
-        }
+        if (type.equals("rect")) p.box(w, h, w);
+        else if (type.equals("triangle")) drawPrism(p, w, h, w/2);
+        else p.sphere(w/2);
     }
 
     private void drawPrism(PApplet p, float w, float h, float d) {
@@ -48,14 +44,9 @@ public class ShapeNode extends SceneNode {
         p.noFill();
         p.stroke(255, 255, 0);
         p.strokeWeight(2);
-        if (type.equals("rect")) {
-            p.box(w + 5, h + 5, w + 5);
-        } else if (type.equals("triangle")) {
-            drawPrism(p, w + 5, h + 5, w/2 + 5);
-        } else {
-            p.sphereDetail(12);
-            p.sphere(w/2 + 5);
-        }
+        if (type.equals("rect")) p.box(w+5, h+5, w+5);
+        else if (type.equals("triangle")) drawPrism(p, w+5, h+5, w/2+5);
+        else { p.sphereDetail(12); p.sphere(w/2 + 5); }
     }
 
     public ShapeNode copySelf() {
