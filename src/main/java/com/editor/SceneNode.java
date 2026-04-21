@@ -60,14 +60,13 @@ public class SceneNode {
     protected void drawNode(PApplet p) {}
 
     public boolean contains(PApplet p, float mx, float my) {
-        // 3D uzaydaki (0,0,0) noktasının ekrandaki izdüşümünü al
+        // Get screen position of node center (0,0,0)
         float sx = p.screenX(0, 0, 0);
         float sy = p.screenY(0, 0, 0);
         
-        // Nesne merkezine olan uzaklığı kontrol et
         if (this instanceof ShapeNode) {
             ShapeNode sn = (ShapeNode)this;
-            // Ölçeklemeyi de hesaba katarak yaklaşık bir yarıçap belirle
+            // Calculate hit threshold based on shape size and scale
             float threshold = (sn.w + sn.h) / 4.0f * scale.x;
             return p.dist(mx, my, sx, sy) < threshold;
         }

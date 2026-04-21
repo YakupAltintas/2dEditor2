@@ -102,16 +102,34 @@ public class Main extends PApplet {
     }
 
     public void mousePressed() {
+        // Match the transforms applied in draw()
+        pushMatrix();
+        translate(width/2, height/2, -200);
+        rotateX(PI/6);
+        translate(-width/2, -height/2, 200);
+        
         selectedNode = findNode(root, mouseX, mouseY);
+        popMatrix();
     }
 
     SceneNode findNode(SceneNode current, float mx, float my) {
+        pushMatrix();
+        applyMatrix(current.getLocalMatrix());
+        
+        SceneNode found = null;
+        // Search children first (those on top)
         for (int i = current.children.size() - 1; i >= 0; i--) {
-            SceneNode found = findNode(current.children.get(i), mx, my);
-            if (found != null) return found;
+            found = findNode(current.children.get(i), mx, my);
+            if (found != null) break;
         }
-        if (current.contains(this, mx, my)) return current;
-        return null;
+        
+        // If not found in children, check this node
+        if (found == null && current.contains(this, mx, my)) {
+            found = current;
+        }
+        
+        popMatrix();
+        return found;
     }
 
     public void keyPressed() {
