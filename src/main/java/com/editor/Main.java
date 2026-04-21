@@ -224,7 +224,12 @@ public class Main extends PApplet {
         getMatrix(totalM);
         totalM.invert();
         
-        newNode.pos.set(totalM.multX(mouseX, mouseY, 0), totalM.multY(mouseX, mouseY, 0), 0);
+        PVector localPos = new PVector(totalM.multX(mouseX, mouseY, 0), totalM.multY(mouseX, mouseY, 0), 0);
+        // Limit the distance from parent to keep satellites close
+        if (parentNode != root) {
+            localPos.limit(120);
+        }
+        newNode.pos.set(localPos);
         popMatrix();
 
         parentNode.addChild(newNode);
