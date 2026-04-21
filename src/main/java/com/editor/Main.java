@@ -73,14 +73,11 @@ public class Main extends PApplet {
     }
 
     void drawSelectionHighlight() {
-        if (selectedNode != null && selectedNode instanceof ShapeNode) {
+        if (selectedNode != null) {
             PMatrix2D m = selectedNode.getGlobalMatrix();
             pushMatrix();
             applyMatrix(m);
-            noFill();
-            stroke(255, 255, 0);
-            strokeWeight(2);
-            rect(0, 0, ((ShapeNode)selectedNode).w + 10, ((ShapeNode)selectedNode).h + 10);
+            selectedNode.drawHighlight(this);
             popMatrix();
         }
     }

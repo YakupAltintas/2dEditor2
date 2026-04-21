@@ -30,7 +30,30 @@ public class ShapeNode extends SceneNode {
             p.vertex(0, -h/2, -10); p.vertex(-w/2, h/2, -10); p.vertex(w/2, h/2, -10);
             p.endShape(PConstants.CLOSE);
         } else {
-            p.sphere(w/2); // 2D Daire yerine 3D Küre
+            p.sphere(w/2);
+        }
+    }
+
+    @Override
+    public void drawHighlight(PApplet p) {
+        p.noFill();
+        p.stroke(255, 255, 0);
+        p.strokeWeight(1);
+        
+        if (type.equals("rect")) {
+            p.box(w + 10, h + 10, 30);
+        } else if (type.equals("triangle")) {
+            float tw = w + 15;
+            float th = h + 15;
+            p.beginShape();
+            p.vertex(0, -th/2, 15); p.vertex(-tw/2, th/2, 15); p.vertex(tw/2, th/2, 15);
+            p.endShape(PConstants.CLOSE);
+            p.beginShape();
+            p.vertex(0, -th/2, -15); p.vertex(-tw/2, th/2, -15); p.vertex(tw/2, th/2, -15);
+            p.endShape(PConstants.CLOSE);
+        } else {
+            p.sphereDetail(12);
+            p.sphere(w/2 + 5);
         }
     }
 

@@ -59,6 +59,8 @@ public class SceneNode {
 
     protected void drawNode(PApplet p) {}
 
+    public void drawHighlight(PApplet p) {}
+
     public boolean contains(PApplet p, float mx, float my) {
         // Get screen position of node center (0,0,0)
         float sx = p.screenX(0, 0, 0);
