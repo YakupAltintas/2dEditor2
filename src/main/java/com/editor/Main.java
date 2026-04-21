@@ -148,9 +148,27 @@ public class Main extends PApplet {
 
     void addNewShape(String type) {
         int c = color(random(100, 255), random(100, 255), random(100, 255));
-        ShapeNode newNode = new ShapeNode("New " + type, type, 60, 60, c);
-        newNode.pos.set(mouseX, mouseY);
-        root.addChild(newNode);
+        ShapeNode newNode = new ShapeNode("New " + type, type, 50, 50, c);
+        
+        // Eğer bir nesne seçiliyse yeni nesneyi ona bağla, değilse root'a ekle
+        SceneNode parentNode = (selectedNode != null) ? selectedNode : root;
+        
+        // Fare koordinatlarını ebeveynin yerel sistemine çevir
+        PMatrix2D inv = parentNode.getGlobalMatrix();
+        inv.invert();
+        float lx = inv.multX(mouseX, mouseY);
+        float ly = inv.multY(mouseX, mouseY);
+        
+        newNode.pos.set(lx, ly);
+        parentNode.addChild(newNode);
+        
+        // Eğer bir ebeveyne eklendiyse otomatik yörünge hareketi ver
+        if (parentNode != root) {
+            newNode.isAnimating = true;
+            newNode.rotationSpeed = random(0.03f, 0.08f);
+            newNode.name = "Satellite of " + parentNode.name;
+        }
+
         selectedNode = newNode;
         saveState();
     }
