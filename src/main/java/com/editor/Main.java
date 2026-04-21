@@ -118,14 +118,14 @@ public class Main extends PApplet {
         hint(PConstants.DISABLE_DEPTH_TEST);
         fill(255);
         textSize(12);
-        text("SELECTED: " + (selectedNode != null ? selectedNode.name : "None"), 20, 25);
-        text("NAV: Hold Left-Click + WASD (Horizontal), QE (Vertical)", 20, 45);
-        text("EDIT: Arrows (Move), W/S (Scale), A/D (Rotate), P (Pivot), L (Anim), U (Undo), DEL (Delete), R (Reset)", 20, 65);
-        text("ADD: 1 (Square), 2 (Circle), 3 (Triangle)", 20, 85);
+        text("SECILI: " + (selectedNode != null ? selectedNode.name : "Yok"), 20, 25);
+        text("GEZINTI: Sol Tik Basili + WASD (Yatay), QE (Dikey)", 20, 45);
+        text("DUZENLE: Oklar (Tasi), W/S (Olcek), A/D (Don), P (Pivot), L (Anim), U (Geri Al), DEL (Sil), R (Sifirla)", 20, 65);
+        text("EKLE: 1 (Kare), 2 (Daire), 3 (Ucgen)", 20, 85);
         
         if (selectedNode != null) {
             PMatrix3D m = selectedNode.getLocalMatrix();
-            text("3D MATRIX (Rotation/Scale part):", 20, 115);
+            text("3D MATRIS (Rotasyon/Olcek):", 20, 115);
             text(String.format("[%.2f, %.2f, %.2f]", m.m00, m.m01, m.m02), 20, 135);
             text(String.format("[%.2f, %.2f, %.2f]", m.m10, m.m11, m.m12), 20, 155);
             text(String.format("[%.2f, %.2f, %.2f]", m.m20, m.m21, m.m22), 20, 175);
