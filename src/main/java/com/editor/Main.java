@@ -10,7 +10,7 @@ public class Main extends PApplet {
     
     // Camera/Navigation variables
     float camX = 0, camY = 0, camZ = 0;
-    float camRotY = 0, camRotX = PI/6;
+    float camRotY = 0, camRotX = PI/4;
     boolean[] keyState = new boolean[1024];
     
     public static void main(String[] args) {
@@ -30,7 +30,7 @@ public class Main extends PApplet {
 
     void resetScene() {
         camX = 0; camY = 0; camZ = 0;
-        camRotX = PI/6; camRotY = 0;
+        camRotX = PI/4; camRotY = 0;
         root = new SceneNode();
         root.name = "Root";
 
