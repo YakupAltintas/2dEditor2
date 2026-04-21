@@ -66,10 +66,9 @@ public class Main extends PApplet {
         }
 
         pushMatrix();
-        // Apply Camera and Scene Transform
-        translate(width/2 + camX, height/2 + camY, -200 + camZ);
+        // Apply Camera and Scene Transform (Centered at 0,0,0)
+        translate(width/2 + camX, height/2 + camY, camZ);
         rotateX(PI/6);
-        translate(-width/2, -height/2, 200);
         
         drawGrid();
         root.update();
@@ -127,11 +126,10 @@ public class Main extends PApplet {
     }
 
     public void mousePressed() {
-        // Hit test must account for camera position
+        // Match the transforms applied in draw()
         pushMatrix();
-        translate(width/2 + camX, height/2 + camY, -200 + camZ);
+        translate(width/2 + camX, height/2 + camY, camZ);
         rotateX(PI/6);
-        translate(-width/2, -height/2, 200);
         selectedNode = findNode(root, mouseX, mouseY);
         popMatrix();
     }
@@ -211,9 +209,8 @@ public class Main extends PApplet {
         
         pushMatrix();
         // Must include camera transforms for correct placement
-        translate(width/2 + camX, height/2 + camY, -200 + camZ);
+        translate(width/2 + camX, height/2 + camY, camZ);
         rotateX(PI/6);
-        translate(-width/2, -height/2, 200);
         
         applyMatrix(parentNode.getGlobalMatrix());
         
