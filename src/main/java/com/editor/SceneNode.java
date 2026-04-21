@@ -60,11 +60,18 @@ public class SceneNode {
     protected void drawNode(PApplet p) {}
 
     public boolean contains(PApplet p, float mx, float my) {
-        PMatrix2D inv = getGlobalMatrix();
-        inv.invert();
-        float localX = inv.multX(mx, my);
-        float localY = inv.multY(mx, my);
-        return isInside(localX, localY);
+        // 3D uzaydaki (0,0,0) noktasının ekrandaki izdüşümünü al
+        float sx = p.screenX(0, 0, 0);
+        float sy = p.screenY(0, 0, 0);
+        
+        // Nesne merkezine olan uzaklığı kontrol et
+        if (this instanceof ShapeNode) {
+            ShapeNode sn = (ShapeNode)this;
+            // Ölçeklemeyi de hesaba katarak yaklaşık bir yarıçap belirle
+            float threshold = (sn.w + sn.h) / 4.0f * scale.x;
+            return p.dist(mx, my, sx, sy) < threshold;
+        }
+        return false;
     }
 
     protected boolean isInside(float lx, float ly) { return false; }
