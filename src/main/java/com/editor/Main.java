@@ -125,11 +125,12 @@ public class Main extends PApplet {
         if (key == '2') addNewShape("ellipse");
         if (key == '3') addNewShape("triangle");
 
-        if (keyCode == DELETE || keyCode == BACKSPACE) {
+        if (key == DELETE || key == BACKSPACE || keyCode == DELETE || keyCode == BACKSPACE) {
             if (selectedNode != null && selectedNode.parent != null) {
                 selectedNode.parent.children.remove(selectedNode);
                 selectedNode = null;
                 saveState();
+                return; // Prevent further processing for this key press
             }
         }
 
