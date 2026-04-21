@@ -22,6 +22,7 @@ public class Main extends PApplet {
     }
 
     public void setup() {
+        surface.setResizable(true);
         pixelDensity(displayDensity());
         root = new SceneNode();
         root.name = "Root";
@@ -81,10 +82,20 @@ public class Main extends PApplet {
 
     void drawGrid() {
         stroke(50);
-        for(int i=0; i<=width; i+=40) line(i,0,0, i,height,0);
-        for(int i=0; i<=height; i+=40) line(0,i,0, width,i,0);
-        stroke(0, 255, 0); line(width/2, 0, 0, width/2, height, 0);
-        stroke(255, 0, 0); line(0, height/2, 0, width, height/2, 0);
+        int range = 2000; // Geniş kapsamlı ızgara
+        int step = 40;
+        
+        // Yatay ve Dikey çizgiler (Orijin merkezli)
+        for(int i = -range; i <= range; i += step) {
+            line(i, -range, 0, i, range, 0);
+            line(-range, i, 0, range, i, 0);
+        }
+        
+        // Eksen çizgileri
+        strokeWeight(2);
+        stroke(0, 255, 0); line(0, -range, 0, 0, range, 0); // Y Ekseni (Yeşil)
+        stroke(255, 0, 0); line(-range, 0, 0, range, 0, 0); // X Ekseni (Kırmızı)
+        strokeWeight(1);
     }
 
     void drawSelectionHighlight() {
