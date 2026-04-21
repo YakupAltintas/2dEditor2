@@ -18,14 +18,19 @@ public class ShapeNode extends SceneNode {
     @Override
     protected void drawNode(PApplet p) {
         p.fill(fillColor);
-        p.noStroke();
+        p.stroke(255, 50);
         if (type.equals("rect")) {
-            p.rectMode(PConstants.CENTER);
-            p.rect(0, 0, w, h);
+            p.box(w, h, 20); // 2D Dikdörtgen yerine 3D Kutu
         } else if (type.equals("triangle")) {
-            p.triangle(0, -h/2, -w/2, h/2, w/2, h/2);
+            // Üçgen prizma simülasyonu
+            p.beginShape();
+            p.vertex(0, -h/2, 10); p.vertex(-w/2, h/2, 10); p.vertex(w/2, h/2, 10);
+            p.endShape(PConstants.CLOSE);
+            p.beginShape();
+            p.vertex(0, -h/2, -10); p.vertex(-w/2, h/2, -10); p.vertex(w/2, h/2, -10);
+            p.endShape(PConstants.CLOSE);
         } else {
-            p.ellipse(0, 0, w, h);
+            p.sphere(w/2); // 2D Daire yerine 3D Küre
         }
     }
 

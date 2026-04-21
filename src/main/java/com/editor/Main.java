@@ -13,7 +13,7 @@ public class Main extends PApplet {
     }
 
     public void settings() {
-        size(800, 600);
+        size(800, 600, P3D);
         smooth(8);
     }
 
@@ -47,12 +47,20 @@ public class Main extends PApplet {
 
     public void draw() {
         background(20);
-        drawGrid();
+        lights(); // 3D Işıklandırma
         
+        // Sahneyi 3D göstermek için hafif bir eğim
+        pushMatrix();
+        translate(width/2, height/2, -200);
+        rotateX(PI/6);
+        translate(-width/2, -height/2, 200);
+        
+        drawGrid();
         root.update();
         root.display(this);
-        
         drawSelectionHighlight();
+        popMatrix();
+        
         drawUI();
     }
 
