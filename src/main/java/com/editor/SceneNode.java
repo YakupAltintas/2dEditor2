@@ -20,17 +20,18 @@ public class SceneNode {
         children.add(child);
     }
 
-    public PMatrix2D getLocalMatrix() {
-        PMatrix2D m = new PMatrix2D();
-        m.translate(pos.x, pos.y);
-        m.rotate(rot);
-        m.scale(scale.x, scale.y);
-        m.translate(-pivot.x, -pivot.y);
+    public PMatrix3D getLocalMatrix() {
+        PMatrix3D m = new PMatrix3D();
+        m.translate(pos.x, pos.y, pos.z);
+        m.rotateZ(rot);
+        // Uniform scale across all axes to prevent distortion
+        m.scale(scale.x, scale.y, scale.z);
+        m.translate(-pivot.x, -pivot.y, -pivot.z);
         return m;
     }
 
-    public PMatrix2D getGlobalMatrix() {
-        PMatrix2D res = getLocalMatrix();
+    public PMatrix3D getGlobalMatrix() {
+        PMatrix3D res = getLocalMatrix();
         if (parent != null) {
             res.preApply(parent.getGlobalMatrix());
         }
