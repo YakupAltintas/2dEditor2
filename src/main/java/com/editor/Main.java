@@ -199,10 +199,18 @@ public class Main extends PApplet {
         SceneNode parentNode = (selectedNode != null) ? selectedNode : root;
         
         pushMatrix();
+        // Must include camera transforms for correct placement
+        translate(width/2 + camX, height/2 + camY, -200 + camZ);
+        rotateX(PI/6);
+        translate(-width/2, -height/2, 200);
+        
         applyMatrix(parentNode.getGlobalMatrix());
-        PMatrix3D inv = parentNode.getGlobalMatrix();
-        inv.invert();
-        newNode.pos.set(inv.multX(mouseX, mouseY, 0), inv.multY(mouseX, mouseY, 0), 0);
+        
+        PMatrix3D totalM = new PMatrix3D();
+        getMatrix(totalM);
+        totalM.invert();
+        
+        newNode.pos.set(totalM.multX(mouseX, mouseY, 0), totalM.multY(mouseX, mouseY, 0), 0);
         popMatrix();
 
         parentNode.addChild(newNode);
@@ -228,10 +236,33 @@ public class Main extends PApplet {
     }
 
     public void mouseDragged() {
-        // Translation via dragging still works when not holding camera mod
         if (selectedNode != null && mouseButton == LEFT && !keyState['w'] && !keyState['a'] && !keyState['s'] && !keyState['d']) {
-            selectedNode.pos.x += (mouseX - pmouseX);
-            selectedNode.pos.y += (mouseY - pmouseY);
+            pushMatrix();
+            // Apply same scene transforms as in draw()
+            translate(width/2 + camX, height/2 + camY, -200 + camZ);
+            rotateX(PI/6);
+            translate(-width/2, -height/2, 200);
+            
+            // Apply parent's global matrix to get to the coordinate system where selectedNode.pos lives
+            if (selectedNode.parent != null) {
+                applyMatrix(selectedNode.parent.getGlobalMatrix());
+            }
+
+            PMatrix3D totalM = new PMatrix3D();
+            getMatrix(totalM);
+            totalM.invert();
+            
+            // Project current and previous mouse positions into local space
+            float x1 = totalM.multX(pmouseX, pmouseY, 0);
+            float y1 = totalM.multY(pmouseX, pmouseY, 0);
+            float x2 = totalM.multX(mouseX, mouseY, 0);
+            float y2 = totalM.multY(mouseX, mouseY, 0);
+            
+            // Update position based on local delta
+            selectedNode.pos.x += (x2 - x1);
+            selectedNode.pos.y += (y2 - y1);
+            
+            popMatrix();
         }
     }
     
