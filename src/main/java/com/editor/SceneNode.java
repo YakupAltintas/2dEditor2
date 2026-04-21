@@ -48,7 +48,6 @@ public class SceneNode {
         
         drawNode(p);
         
-        // Pivot noktasını göster
         p.fill(255, 0, 0);
         p.ellipse(pivot.x, pivot.y, 5, 5);
         
@@ -70,25 +69,18 @@ public class SceneNode {
 
     protected boolean isInside(float lx, float ly) { return false; }
     
-    // State for Undo
-    public NodeState getState() {
-        return new NodeState(pos.copy(), rot, scale.copy(), pivot.copy(), isAnimating);
-    }
-
-    public void setState(NodeState s) {
-        this.pos = s.pos.copy();
-        this.rot = s.rot;
-        this.scale = s.scale.copy();
-        this.pivot = s.pivot.copy();
-        this.isAnimating = s.isAnimating;
-    }
-
-    public static class NodeState {
-        PVector pos, scale, pivot;
-        float rot;
-        boolean isAnimating;
-        NodeState(PVector p, float r, PVector s, PVector pv, boolean a) {
-            pos=p; rot=r; scale=s; pivot=pv; isAnimating=a;
+    public SceneNode copy() {
+        SceneNode n = new SceneNode();
+        n.name = this.name;
+        n.pos = pos.copy();
+        n.rot = rot;
+        n.scale = scale.copy();
+        n.pivot = pivot.copy();
+        n.isAnimating = isAnimating;
+        n.rotationSpeed = rotationSpeed;
+        for (SceneNode child : children) {
+            n.addChild(child.copy());
         }
+        return n;
     }
 }

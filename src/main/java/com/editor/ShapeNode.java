@@ -34,4 +34,19 @@ public class ShapeNode extends SceneNode {
         // Basit bounding box kontrolü
         return lx >= -w/2 && lx <= w/2 && ly >= -h/2 && ly <= h/2;
     }
+
+    @Override
+    public SceneNode copy() {
+        ShapeNode n = new ShapeNode(name, type, w, h, fillColor);
+        n.pos = pos.copy();
+        n.rot = rot;
+        n.scale = scale.copy();
+        n.pivot = pivot.copy();
+        n.isAnimating = isAnimating;
+        n.rotationSpeed = rotationSpeed;
+        for (SceneNode child : children) {
+            n.addChild(child.copy());
+        }
+        return n;
+    }
 }
