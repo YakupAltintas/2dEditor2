@@ -24,6 +24,11 @@ public class Main extends PApplet {
     public void setup() {
         surface.setResizable(true);
         pixelDensity(displayDensity());
+        resetScene();
+    }
+
+    void resetScene() {
+        camX = 0; camY = 0; camZ = 0;
         root = new SceneNode();
         root.name = "Root";
 
@@ -112,7 +117,7 @@ public class Main extends PApplet {
         textSize(12);
         text("SELECTED: " + (selectedNode != null ? selectedNode.name : "None"), 20, 25);
         text("NAV: Hold Left-Click + WASD (Horizontal), QE (Vertical)", 20, 45);
-        text("EDIT: Arrows (Move), W/S (Scale), A/D (Rotate), P (Pivot), L (Anim), U (Undo), DEL (Delete)", 20, 65);
+        text("EDIT: Arrows (Move), W/S (Scale), A/D (Rotate), P (Pivot), L (Anim), U (Undo), DEL (Delete), R (Reset)", 20, 65);
         text("ADD: 1 (Square), 2 (Circle), 3 (Triangle)", 20, 85);
         
         if (selectedNode != null) {
@@ -153,6 +158,7 @@ public class Main extends PApplet {
         if (key == '1') addNewShape("rect");
         if (key == '2') addNewShape("ellipse");
         if (key == '3') addNewShape("triangle");
+        if (key == 'r' || key == 'R') resetScene();
 
         if (key == DELETE || key == BACKSPACE || keyCode == DELETE || keyCode == BACKSPACE) {
             if (selectedNode != null && selectedNode.parent != null) {
