@@ -10,6 +10,7 @@ public class Main extends PApplet {
     
     // Camera/Navigation variables
     float camX = 0, camY = 0, camZ = 0;
+    float camRotY = 0, camRotX = PI/6;
     boolean[] keyState = new boolean[1024];
     
     public static void main(String[] args) {
@@ -29,6 +30,7 @@ public class Main extends PApplet {
 
     void resetScene() {
         camX = 0; camY = 0; camZ = 0;
+        camRotX = PI/6; camRotY = 0;
         root = new SceneNode();
         root.name = "Root";
 
@@ -73,7 +75,8 @@ public class Main extends PApplet {
         pushMatrix();
         // Apply Camera and Scene Transform (Centered at 0,0,0)
         translate(width/2 + camX, height/2 + camY, camZ);
-        rotateX(PI/6);
+        rotateX(camRotX);
+        rotateY(camRotY);
         
         drawGrid();
         root.update();
@@ -134,7 +137,8 @@ public class Main extends PApplet {
         // Match the transforms applied in draw()
         pushMatrix();
         translate(width/2 + camX, height/2 + camY, camZ);
-        rotateX(PI/6);
+        rotateX(camRotX);
+        rotateY(camRotY);
         selectedNode = findNode(root, mouseX, mouseY);
         popMatrix();
     }
@@ -216,7 +220,8 @@ public class Main extends PApplet {
         pushMatrix();
         // Must include camera transforms for correct placement
         translate(width/2 + camX, height/2 + camY, camZ);
-        rotateX(PI/6);
+        rotateX(camRotX);
+        rotateY(camRotY);
         
         applyMatrix(parentNode.getGlobalMatrix());
         
@@ -255,12 +260,15 @@ public class Main extends PApplet {
     }
 
     public void mouseDragged() {
-        if (selectedNode != null && mouseButton == LEFT && !keyState['w'] && !keyState['a'] && !keyState['s'] && !keyState['d']) {
-            pushMatrix();
-            // Apply same scene transforms as in draw()
-            translate(width/2 + camX, height/2 + camY, -200 + camZ);
-            rotateX(PI/6);
-            translate(-width/2, -height/2, 200);
+        if (mouseButton == LEFT) {
+            boolean isNavMode = keyState['w'] || keyState['a'] || keyState['s'] || keyState['d'] || keyState['q'] || keyState['e'];
+            
+            if (selectedNode != null && !isNavMode) {
+                pushMatrix();
+                // Apply same scene transforms as in draw()
+                translate(width/2 + camX, height/2 + camY, camZ);
+                rotateX(camRotX);
+                rotateY(camRotY);
             
             // Apply parent's global matrix to get to the coordinate system where selectedNode.pos lives
             if (selectedNode.parent != null) {
@@ -279,9 +287,13 @@ public class Main extends PApplet {
             
             // Update position based on local delta
             selectedNode.pos.x += (x2 - x1);
-            selectedNode.pos.y += (y2 - y1);
-            
-            popMatrix();
+                selectedNode.pos.y += (y2 - y1);
+                popMatrix();
+            } else {
+                // Camera Rotation
+                camRotY += (mouseX - pmouseX) * 0.01f;
+                camRotX -= (mouseY - pmouseY) * 0.01f;
+            }
         }
     }
     
