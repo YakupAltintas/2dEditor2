@@ -10,10 +10,10 @@ public class Main extends PApplet {
     SceneNode selectedNode;
     Stack<SceneNode> undoStack = new Stack<>();
     
-    // Kamera Degiskenleri (Fly-Cam)
+    // Fly-Cam Değişkenleri
     float camX = 0, camY = 0, camZ = 500;
-    float camRotY = 0; 
-    float camRotX = 0; 
+    float camRotY = 0; // Yaw (Yatay)
+    float camRotX = 0; // Pitch (Dikey)
     boolean[] keyState = new boolean[1024];
     
     public static void main(String[] args) {
@@ -59,61 +59,48 @@ public class Main extends PApplet {
         saveState();
     }
 
-    // Ekran koordinatlarini Dunya Z=0 duzlemine donusturur
+    // Ekran piksellerini Dünya Z=0 koordinatlarına çevirir
     PVector getMouseWorld() {
         PGraphics3D p3d = (PGraphics3D) g;
         PMatrix3D combined = p3d.projection.get();
         combined.apply(p3d.modelview);
         combined.invert();
-
         float xNDC = map(mouseX, 0, width, -1, 1);
-        float yNDC = map(mouseY, 0, height, 1, -1);
-
+        float yNDC = map(mouseY, 0, height, 1, -1); 
         PVector n = combined.mult(new PVector(xNDC, yNDC, -1), null);
         PVector f = combined.mult(new PVector(xNDC, yNDC, 1), null);
-
         float t = -n.z / (f.z - n.z);
         return new PVector(n.x + t * (f.x - n.x), n.y + t * (f.y - n.y), 0);
     }
 
     void applyCamera() {
-        // Bakis yonu vektoru - Pitch ve Yaw ile hesaplanir
+        // Bakış yönü (Natural Gaze)
         float dx = sin(camRotY) * cos(camRotX);
         float dy = sin(camRotX);
         float dz = -cos(camRotY) * cos(camRotX);
-        
-        // camera() fonksiyonu ile bakis noktasini (center) belirle
         camera(camX, camY, camZ, camX + dx, camY + dy, camZ + dz, 0, 1, 0);
     }
 
     void updateCamera() {
         if (mousePressed && mouseButton == RIGHT) {
             float speed = 8.0f;
-            
-            // Bakis yonune (Forward) gore hareket
-            float fx = sin(camRotY) * cos(camRotX);
-            float fy = sin(camRotX);
-            float fz = -cos(camRotY) * cos(camRotX);
-            
-            // Sag vektor (Right)
-            float rx = cos(camRotY);
-            float rz = sin(camRotY);
+            float fx = sin(camRotY) * cos(camRotX), fy = sin(camRotX), fz = -cos(camRotY) * cos(camRotX);
+            float rx = cos(camRotY), rz = sin(camRotY);
+            // Yerel Yukarı Vektörü (Navigasyon için)
+            float ux = -sin(camRotY) * sin(camRotX), uy = cos(camRotX), uz = cos(camRotY) * sin(camRotX);
 
             if (keyState['w'] || keyState['W']) { camX += fx * speed; camY += fy * speed; camZ += fz * speed; }
             if (keyState['s'] || keyState['S']) { camX -= fx * speed; camY -= fy * speed; camZ -= fz * speed; }
             if (keyState['a'] || keyState['A']) { camX -= rx * speed; camZ -= rz * speed; }
             if (keyState['d'] || keyState['D']) { camX += rx * speed; camZ += rz * speed; }
-            
-            // Dikey eksende hareket (Q: Yukari, E: Asagi)
-            if (keyState['q'] || keyState['Q']) camY -= speed;
-            if (keyState['e'] || keyState['E']) camY += speed;
+            if (keyState['q'] || keyState['Q']) { camX -= ux * speed; camY -= uy * speed; camZ -= uz * speed; }
+            if (keyState['e'] || keyState['E']) { camX += ux * speed; camY += uy * speed; camZ += uz * speed; }
         }
     }
 
     public void draw() {
         background(20);
         updateCamera();
-        
         pushMatrix();
         applyCamera();
         lights();
@@ -122,7 +109,6 @@ public class Main extends PApplet {
         root.display(this);
         drawSelectionHighlight();
         popMatrix();
-        
         drawUI();
     }
 
@@ -151,7 +137,7 @@ public class Main extends PApplet {
         camera(); hint(PConstants.DISABLE_DEPTH_TEST);
         fill(255); textSize(12);
         text("SECILI: " + (selectedNode != null ? selectedNode.name : "Yok"), 20, 25);
-        text("GEZINTI: Sag Tik + WASD (Bakis Yonu), Q (Yukari), E (Asagi), Tekerlek (Zoom) | Sag Tik + Fare (Don)", 20, 45);
+        text("GEZINTI: Sag Tik + WASD (Hareket), Q/E (Yukari/Asagi), Tekerlek (Zoom) | Sag Tik + Fare (Don)", 20, 45);
         text("DUZENLE: Sol Tik (Sec/Tasi), W/S (Olcek), A/D (Don), P (Pivot), L (Anim), U (Geri), DEL (Sil)", 20, 65);
         text("EKLE: 1 (Kare), 2 (Daire), 3 (Ucgen) | R (Sifirla)", 20, 85);
         hint(PConstants.ENABLE_DEPTH_TEST);
@@ -216,7 +202,9 @@ public class Main extends PApplet {
         if (key == 'p' || key == 'P') {
             pushMatrix(); applyCamera();
             PVector wPos = getMouseWorld();
-            PMatrix3D inv = selectedNode.getGlobalMatrix();
+            PMatrix3D inv = new PMatrix3D();
+            getMatrix(inv);
+            inv.preApply(selectedNode.getGlobalMatrix());
             inv.invert();
             selectedNode.pivot.set(inv.multX(wPos.x, wPos.y, 0), inv.multY(wPos.x, wPos.y, 0), 0);
             popMatrix(); changed = true;
@@ -237,10 +225,12 @@ public class Main extends PApplet {
         SceneNode parentNode = (selectedNode != null) ? selectedNode : root;
         
         pushMatrix(); applyCamera();
-        PVector worldPos = getMouseWorld();
-        PMatrix3D inv = parentNode.getGlobalMatrix();
+        PVector wPos = getMouseWorld();
+        PMatrix3D inv = new PMatrix3D();
+        getMatrix(inv);
+        inv.preApply(parentNode.getGlobalMatrix());
         inv.invert();
-        newNode.pos.set(inv.multX(worldPos.x, worldPos.y, 0), inv.multY(worldPos.x, worldPos.y, 0), 0);
+        newNode.pos.set(inv.multX(wPos.x, wPos.y, 0), inv.multY(wPos.x, wPos.y, 0), 0);
         popMatrix();
 
         parentNode.addChild(newNode);
@@ -267,27 +257,23 @@ public class Main extends PApplet {
 
     public void mouseDragged() {
         if (mouseButton == RIGHT) {
-            // Bakis Acisi: Stabil ufuk (No roll)
-            camRotY += (mouseX - pmouseX) * 0.01f;
-            camRotX += (mouseY - pmouseY) * 0.01f;
-            // Tepe taklak olmayi onlemek icin dikey kısıtlama
+            // Bakış Açısı (Natural Fly-Cam)
+            camRotY += (mouseX - pmouseX) * 0.008f;
+            camRotX += (mouseY - pmouseY) * 0.008f;
             camRotX = constrain(camRotX, -1.53f, 1.53f);
         } else if (mouseButton == LEFT && selectedNode != null) {
-            // Nesne Tasima: Kamera matrisine tam senkronize
+            // Nesne Taşıma (World Projection)
             pushMatrix(); applyCamera();
             PVector wCurr = getMouseWorld();
             int ox = mouseX, oy = mouseY;
             mouseX = pmouseX; mouseY = pmouseY;
             PVector wPrev = getMouseWorld();
             mouseX = ox; mouseY = oy;
-            
             PMatrix3D inv = new PMatrix3D();
             if (selectedNode.parent != null) inv = selectedNode.parent.getGlobalMatrix();
             inv.invert();
-            
             float dx = inv.multX(wCurr.x, wCurr.y, 0) - inv.multX(wPrev.x, wPrev.y, 0);
             float dy = inv.multY(wCurr.x, wCurr.y, 0) - inv.multY(wPrev.x, wPrev.y, 0);
-            
             selectedNode.pos.x += dx; selectedNode.pos.y += dy;
             popMatrix();
         }
