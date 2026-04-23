@@ -9,7 +9,7 @@ public class Main extends PApplet {
     SceneNode selectedNode;
     Stack<SceneNode> undoStack = new Stack<>();
     
-    // Camera variables
+    // Kamera Degiskenleri
     float camX = 0, camY = 0, camZ = 500;
     float camRotY = 0; 
     float camRotX = 0; 
@@ -68,17 +68,11 @@ public class Main extends PApplet {
     void updateCamera() {
         if (mousePressed && mouseButton == RIGHT) {
             float speed = 8.0f;
-            
-            // Forward Vector
             float fx = sin(camRotY) * cos(camRotX);
             float fy = sin(camRotX);
             float fz = -cos(camRotY) * cos(camRotX);
-            
-            // Right Vector
             float rx = cos(camRotY);
             float rz = sin(camRotY);
-            
-            // Local Up Vector (Calculated via cross product of Right and Forward)
             float ux = -sin(camRotY) * sin(camRotX);
             float uy = cos(camRotX);
             float uz = cos(camRotY) * sin(camRotX);
@@ -87,8 +81,6 @@ public class Main extends PApplet {
             if (keyState['s'] || keyState['S']) { camX -= fx * speed; camY -= fy * speed; camZ -= fz * speed; }
             if (keyState['a'] || keyState['A']) { camX -= rx * speed; camZ -= rz * speed; }
             if (keyState['d'] || keyState['D']) { camX += rx * speed; camZ += rz * speed; }
-            
-            // Q/E: Move along the camera's local vertical axis
             if (keyState['q'] || keyState['Q']) { camX -= ux * speed; camY -= uy * speed; camZ -= uz * speed; }
             if (keyState['e'] || keyState['E']) { camX += ux * speed; camY += uy * speed; camZ += uz * speed; }
         }
@@ -227,12 +219,17 @@ public class Main extends PApplet {
         
         pushMatrix();
         applyCamera();
-        PMatrix3D inv = new PMatrix3D();
-        getMatrix(inv);
-        inv.preApply(parentNode.getGlobalMatrix());
-        inv.invert();
+        applyMatrix(parentNode.getGlobalMatrix());
         
-        newNode.pos.set(inv.multX(mouseX, mouseY, 0), inv.multY(mouseX, mouseY, 0), inv.multZ(mouseX, mouseY, 0));
+        PMatrix3D totalM = new PMatrix3D();
+        getMatrix(totalM); 
+        totalM.invert();
+        
+        // Project mouse to the local plane where Z is always 0
+        float lx = totalM.multX(mouseX, mouseY, 0);
+        float ly = totalM.multY(mouseX, mouseY, 0);
+        
+        newNode.pos.set(lx, ly, 0); 
         popMatrix();
 
         parentNode.addChild(newNode);
