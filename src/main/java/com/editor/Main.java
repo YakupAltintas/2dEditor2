@@ -132,7 +132,8 @@ public class Main extends PApplet {
     }
 
     public void mousePressed() {
-        if (mouseButton == RIGHT) {
+        // Nesne secimi artik SOL TIK ile yapilir
+        if (mouseButton == LEFT) {
             pushMatrix();
             applyCamera();
             selectedNode = findNode(root, mouseX, mouseY);
