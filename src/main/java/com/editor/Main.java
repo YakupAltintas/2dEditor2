@@ -8,9 +8,10 @@ public class Main extends PApplet {
     SceneNode selectedNode;
     Stack<SceneNode> undoStack = new Stack<>();
     
-    // Kamera Degiskenleri (Fly-Cam)
+    // Kamera Degiskenleri
     float camX = 0, camY = 0, camZ = 500;
-    float camRotY = 0, camRotX = 0;
+    float camRotY = 0; // Yaw (Yatay)
+    float camRotX = 0; // Pitch (Dikey)
     boolean[] keyState = new boolean[1024];
     
     public static void main(String[] args) {
@@ -57,34 +58,35 @@ public class Main extends PApplet {
     }
 
     void applyCamera() {
-        // Bakis yonu vektoru (Look-At Vector)
+        // Bakis yonu vektoru (Look-At)
         float dx = sin(camRotY) * cos(camRotX);
         float dy = sin(camRotX);
         float dz = -cos(camRotY) * cos(camRotX);
         
+        // Standard camera with fixed UP vector. 
+        // camRotX limitlenerek tekillik (spinning) onlenir.
         camera(camX, camY, camZ, camX + dx, camY + dy, camZ + dz, 0, 1, 0);
     }
 
     void updateCamera() {
         if (mousePressed && mouseButton == LEFT) {
-            float speed = 6.0f;
+            float speed = 8.0f;
             
-            // Bakis yonune gore hareket vektorleri
+            // Bakis yonune (Forward) gore hareket
             float fx = sin(camRotY) * cos(camRotX);
             float fy = sin(camRotX);
             float fz = -cos(camRotY) * cos(camRotX);
             
-            // Sag vektor (Yatay duzlemde)
+            // Sag vektor (Right)
             float rx = cos(camRotY);
             float rz = sin(camRotY);
 
-            // WASD: Bakis yonune gore ileri/geri ve saga/sola
             if (keyState['w'] || keyState['W']) { camX += fx * speed; camY += fy * speed; camZ += fz * speed; }
             if (keyState['s'] || keyState['S']) { camX -= fx * speed; camY -= fy * speed; camZ -= fz * speed; }
             if (keyState['a'] || keyState['A']) { camX -= rx * speed; camZ -= rz * speed; }
             if (keyState['d'] || keyState['D']) { camX += rx * speed; camZ += rz * speed; }
             
-            // QE: Dikey eksende mutlak hareket
+            // Dikey eksende mutlak hareket (Yukari/Asagi)
             if (keyState['q'] || keyState['Q']) camY -= speed;
             if (keyState['e'] || keyState['E']) camY += speed;
         }
@@ -94,7 +96,6 @@ public class Main extends PApplet {
         background(20);
         updateCamera();
         
-        // 3D Rendering
         pushMatrix();
         applyCamera();
         lights();
@@ -104,7 +105,6 @@ public class Main extends PApplet {
         drawSelectionHighlight();
         popMatrix();
         
-        // 2D Overlay
         drawUI();
     }
 
@@ -131,12 +131,12 @@ public class Main extends PApplet {
     }
 
     void drawUI() {
-        camera(); // Reset camera for 2D
+        camera(); 
         hint(PConstants.DISABLE_DEPTH_TEST);
         fill(255); textSize(12);
         text("SECILI: " + (selectedNode != null ? selectedNode.name : "Yok"), 20, 25);
-        text("GEZINTI: Sol Tik + WASD (Bakis Yonu), QE (Yukari/Asagi) | Sol Tik + Surukle (Bakis Acisi)", 20, 45);
-        text("DUZENLE: Sag Tik/Oklar (Tasi), W/S (Olcek), A/D (Don), P (Pivot), L (Anim), U (Geri), DEL (Sil), R (Sifirla)", 20, 65);
+        text("GEZINTI: Sol Tik + WASD (Bakis Yonunde Hareket), QE (Yukari/Asagi) | Sol Tik + Fare (Bakis Acisi)", 20, 45);
+        text("DUZENLE: Sag Tik (Tasi), W/S (Olcek), A/D (Don), P (Pivot), L (Anim), U (Geri), DEL (Sil), R (Sifirla)", 20, 65);
         text("EKLE: 1 (Kare), 2 (Daire), 3 (Ucgen)", 20, 85);
         hint(PConstants.ENABLE_DEPTH_TEST);
     }
@@ -190,7 +190,6 @@ public class Main extends PApplet {
         if (keyCode == LEFT) { selectedNode.pos.x -= 5; changed = true; }
         if (keyCode == RIGHT) { selectedNode.pos.x += 5; changed = true; }
         
-        // Edit Mode (W/A/S/D used for Camera when Left Click is down)
         if (!(mousePressed && mouseButton == LEFT)) {
             if (key == 'w' || key == 'W') { selectedNode.scale.add(0.05f, 0.05f, 0.05f); changed = true; }
             if (key == 's' || key == 'S') { selectedNode.scale.sub(0.05f, 0.05f, 0.05f); changed = true; }
@@ -260,12 +259,13 @@ public class Main extends PApplet {
 
     public void mouseDragged() {
         if (mouseButton == LEFT) {
-            // Look Around (Non-Inverted)
-            camRotY += (mouseX - pmouseX) * 0.005f;
-            camRotX += (mouseY - pmouseY) * 0.005f;
-            camRotX = constrain(camRotX, -HALF_PI + 0.01f, HALF_PI - 0.01f);
+            // Bakis Acisi: Dogal yonler, Yuksek hassasiyet
+            camRotY += (mouseX - pmouseX) * 0.008f;
+            camRotX += (mouseY - pmouseY) * 0.008f;
+            // Tepe taklak olmayi onlemek icin limit (Pitch limit)
+            camRotX = constrain(camRotX, -1.5f, 1.5f);
         } else if (mouseButton == RIGHT && selectedNode != null) {
-            // Object Translation
+            // Nesne Tasima: Kamera matrisine tam senkronize
             pushMatrix();
             applyCamera();
             if (selectedNode.parent != null) applyMatrix(selectedNode.parent.getGlobalMatrix());
