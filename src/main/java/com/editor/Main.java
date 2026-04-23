@@ -255,9 +255,9 @@ public class Main extends PApplet {
 
     public void mouseDragged() {
         if (mouseButton == LEFT) {
-            // Kamera dondurme (Yatay ve Dikey)
-            camRotY += (mouseX - pmouseX) * 0.01f;
-            camRotX -= (mouseY - pmouseY) * 0.01f;
+            // Kamera dondurme (Yatay ve Dikey) - Yonler duzeltildi
+            camRotY -= (mouseX - pmouseX) * 0.01f;
+            camRotX += (mouseY - pmouseY) * 0.01f;
         } else if (mouseButton == RIGHT && selectedNode != null) {
             pushMatrix();
             applyCameraTransforms();
