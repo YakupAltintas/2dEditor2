@@ -10,7 +10,7 @@ public class Main extends PApplet {
     SceneNode selectedNode;
     Stack<SceneNode> undoStack = new Stack<>();
     
-    // Fly-Cam Değişkenleri
+    // Kamera Degiskenleri (Fly-Cam)
     float camX = 0, camY = 0, camZ = 500;
     float camRotY = 0; 
     float camRotX = 0; 
@@ -33,7 +33,7 @@ public class Main extends PApplet {
 
     void resetScene() {
         camX = 0; camY = 0; camZ = 500;
-        camRotX = 0; camRotY = 0;
+        camRotX = PI/6; camRotY = 0;
         root = new SceneNode();
         root.name = "Root";
 
@@ -59,31 +59,31 @@ public class Main extends PApplet {
         saveState();
     }
 
-    // Ekran piksellerini Dünya Z=0 koordinatlarına çevirir (Hassas unprojection)
+    // Unprojection: Ekran (mx, my) -> Dunya Z=0 (x, y, 0)
     PVector getMouseWorld(float mx, float my) {
         PGraphics3D p3d = (PGraphics3D) g;
         PMatrix3D combined = p3d.projection.get();
         combined.apply(p3d.modelview);
         combined.invert();
 
-        float x = map(mx, 0, width, -1, 1);
-        float y = map(my, 0, height, 1, -1);
+        float xNDC = map(mx, 0, width, -1, 1);
+        float yNDC = map(my, 0, height, 1, -1);
 
-        // Near point (NDC z = -1) with W-division
-        float wn = combined.m30 * x + combined.m31 * y + combined.m32 * (-1) + combined.m33;
-        float nx = (combined.m00 * x + combined.m01 * y + combined.m02 * (-1) + combined.m03) / wn;
-        float ny = (combined.m10 * x + combined.m11 * y + combined.m12 * (-1) + combined.m13) / wn;
-        float nz = (combined.m20 * x + combined.m21 * y + combined.m22 * (-1) + combined.m23) / wn;
+        PVector near = unproject(xNDC, yNDC, -1, combined);
+        PVector far = unproject(xNDC, yNDC, 1, combined);
+        
+        PVector dir = PVector.sub(far, near);
+        if (abs(dir.z) < 0.0001f) return near;
+        float t = -near.z / dir.z;
+        return new PVector(near.x + t * dir.x, near.y + t * dir.y, 0);
+    }
 
-        // Far point (NDC z = 1) with W-division
-        float wf = combined.m30 * x + combined.m31 * y + combined.m32 * 1 + combined.m33;
-        float fx = (combined.m00 * x + combined.m01 * y + combined.m02 * 1 + combined.m03) / wf;
-        float fy = (combined.m10 * x + combined.m11 * y + combined.m12 * 1 + combined.m13) / wf;
-        float fz = (combined.m20 * x + combined.m21 * y + combined.m22 * 1 + combined.m23) / wf;
-
-        // Ray-Plane (Z=0) Intersection
-        float t = -nz / (fz - nz);
-        return new PVector(nx + t * (fx - nx), ny + t * (fy - ny), 0);
+    PVector unproject(float x, float y, float z, PMatrix3D inv) {
+        float outX = inv.m00 * x + inv.m01 * y + inv.m02 * z + inv.m03;
+        float outY = inv.m10 * x + inv.m11 * y + inv.m12 * z + inv.m13;
+        float outZ = inv.m20 * x + inv.m21 * y + inv.m22 * z + inv.m23;
+        float outW = inv.m30 * x + inv.m31 * y + inv.m32 * z + inv.m33;
+        return new PVector(outX/outW, outY/outW, outZ/outW);
     }
 
     void applyCamera() {
@@ -112,7 +112,6 @@ public class Main extends PApplet {
     public void draw() {
         background(20);
         updateCamera();
-        
         pushMatrix();
         applyCamera();
         lights();
@@ -121,7 +120,6 @@ public class Main extends PApplet {
         root.display(this);
         drawSelectionHighlight();
         popMatrix();
-        
         drawUI();
     }
 
@@ -150,7 +148,7 @@ public class Main extends PApplet {
         camera(); hint(PConstants.DISABLE_DEPTH_TEST);
         fill(255); textSize(12);
         text("SECILI: " + (selectedNode != null ? selectedNode.name : "Yok"), 20, 25);
-        text("GEZINTI: Sag Tik + WASD (Bakis), Q/E (Yukari/Asagi), Tekerlek (Zoom) | Sag Tik + Fare (Don)", 20, 45);
+        text("GEZINTI: Sag Tik + WASD (Bakis), Q/E (Yukari/Asagi), Tekerlek (Zoom)", 20, 45);
         text("DUZENLE: Sol Tik (Sec/Tasi), W/S (Olcek), A/D (Don), P (Pivot), L (Anim), U (Geri), DEL (Sil)", 20, 65);
         text("EKLE: 1 (Kare), 2 (Daire), 3 (Ucgen) | R (Sifirla)", 20, 85);
         hint(PConstants.ENABLE_DEPTH_TEST);
@@ -235,7 +233,8 @@ public class Main extends PApplet {
         ShapeNode newNode = new ShapeNode("Yeni " + type, type, 50, 50, c);
         SceneNode parentNode = (selectedNode != null) ? selectedNode : root;
         
-        pushMatrix(); applyCamera();
+        pushMatrix();
+        applyCamera();
         PVector wPos = getMouseWorld(mouseX, mouseY);
         
         PMatrix3D inv = parentNode.getGlobalMatrix();
@@ -267,12 +266,11 @@ public class Main extends PApplet {
 
     public void mouseDragged() {
         if (mouseButton == RIGHT) {
-            camRotY += (mouseX - pmouseX) * 0.005f;
+            camRotY -= (mouseX - pmouseX) * 0.005f;
             camRotX += (mouseY - pmouseY) * 0.005f;
             camRotX = constrain(camRotX, -HALF_PI + 0.01f, HALF_PI - 0.01f);
         } else if (mouseButton == LEFT && selectedNode != null) {
             pushMatrix(); applyCamera();
-            
             PVector wCurr = getMouseWorld(mouseX, mouseY);
             PVector wPrev = getMouseWorld(pmouseX, pmouseY);
             
