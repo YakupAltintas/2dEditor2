@@ -9,7 +9,7 @@ public class Main extends PApplet {
     SceneNode selectedNode;
     Stack<SceneNode> undoStack = new Stack<>();
     
-    // Kamera Degiskenleri (Fly-Cam)
+    // Camera variables
     float camX = 0, camY = 0, camZ = 500;
     float camRotY = 0; 
     float camRotX = 0; 
@@ -68,18 +68,29 @@ public class Main extends PApplet {
     void updateCamera() {
         if (mousePressed && mouseButton == RIGHT) {
             float speed = 8.0f;
+            
+            // Forward Vector
             float fx = sin(camRotY) * cos(camRotX);
             float fy = sin(camRotX);
             float fz = -cos(camRotY) * cos(camRotX);
+            
+            // Right Vector
             float rx = cos(camRotY);
             float rz = sin(camRotY);
+            
+            // Local Up Vector (Calculated via cross product of Right and Forward)
+            float ux = -sin(camRotY) * sin(camRotX);
+            float uy = cos(camRotX);
+            float uz = cos(camRotY) * sin(camRotX);
 
             if (keyState['w'] || keyState['W']) { camX += fx * speed; camY += fy * speed; camZ += fz * speed; }
             if (keyState['s'] || keyState['S']) { camX -= fx * speed; camY -= fy * speed; camZ -= fz * speed; }
             if (keyState['a'] || keyState['A']) { camX -= rx * speed; camZ -= rz * speed; }
             if (keyState['d'] || keyState['D']) { camX += rx * speed; camZ += rz * speed; }
-            if (keyState['q'] || keyState['Q']) camY -= speed; // Yukari
-            if (keyState['e'] || keyState['E']) camY += speed; // Asagi
+            
+            // Q/E: Move along the camera's local vertical axis
+            if (keyState['q'] || keyState['Q']) { camX -= ux * speed; camY -= uy * speed; camZ -= uz * speed; }
+            if (keyState['e'] || keyState['E']) { camX += ux * speed; camY += uy * speed; camZ += uz * speed; }
         }
     }
 
@@ -220,6 +231,7 @@ public class Main extends PApplet {
         getMatrix(inv);
         inv.preApply(parentNode.getGlobalMatrix());
         inv.invert();
+        
         newNode.pos.set(inv.multX(mouseX, mouseY, 0), inv.multY(mouseX, mouseY, 0), inv.multZ(mouseX, mouseY, 0));
         popMatrix();
 
@@ -247,12 +259,10 @@ public class Main extends PApplet {
 
     public void mouseDragged() {
         if (mouseButton == RIGHT) {
-            // Bakis Acisi: Dogal Yonler
-            camRotY += (mouseX - pmouseX) * 0.005f;
+            camRotY -= (mouseX - pmouseX) * 0.005f;
             camRotX += (mouseY - pmouseY) * 0.005f;
             camRotX = constrain(camRotX, -HALF_PI + 0.01f, HALF_PI - 0.01f);
         } else if (mouseButton == LEFT && selectedNode != null) {
-            // Nesne Tasima
             pushMatrix();
             applyCamera();
             if (selectedNode.parent != null) applyMatrix(selectedNode.parent.getGlobalMatrix());
