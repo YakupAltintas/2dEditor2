@@ -2,7 +2,6 @@ package com.editor;
 
 import processing.core.*;
 import processing.event.MouseEvent;
-import processing.opengl.PGraphics3D;
 import java.util.*;
 
 public class Main extends PApplet {
@@ -10,10 +9,9 @@ public class Main extends PApplet {
     SceneNode selectedNode;
     Stack<SceneNode> undoStack = new Stack<>();
     
-    // Camera Variables
-    float camX = 0, camY = 0, camZ = 500;
-    float camRotY = 0; 
-    float camRotX = 0; 
+    // Kamera Degiskenleri (Orbit-Style)
+    float camX = 0, camY = 0, camZ = 0;
+    float camRotY = 0, camRotX = PI/6;
     boolean[] keyState = new boolean[1024];
     
     public static void main(String[] args) {
@@ -32,7 +30,7 @@ public class Main extends PApplet {
     }
 
     void resetScene() {
-        camX = 0; camY = 0; camZ = 500;
+        camX = 0; camY = 0; camZ = 0;
         camRotX = PI/6; camRotY = 0;
         root = new SceneNode();
         root.name = "Root";
@@ -59,54 +57,31 @@ public class Main extends PApplet {
         saveState();
     }
 
-    // Converts Screen Mouse Pixels to World Z=0 Coordinates
-    PVector getMouseWorld() {
-        PGraphics3D p3d = (PGraphics3D) g;
-        PMatrix3D combined = p3d.projection.get();
-        combined.apply(p3d.modelview);
-        combined.invert();
-
-        float xNDC = map(mouseX, 0, width, -1, 1);
-        float yNDC = map(mouseY, 0, height, 1, -1); // Corrected Y-flip for NDC
-
-        PVector n = combined.mult(new PVector(xNDC, yNDC, -1), null);
-        PVector f = combined.mult(new PVector(xNDC, yNDC, 1), null);
-
-        // Line-Plane (Z=0) Intersection
-        float t = -n.z / (f.z - n.z);
-        return new PVector(n.x + t * (f.x - n.x), n.y + t * (f.y - n.y), 0);
-    }
-
-    void applyCamera() {
-        float dx = sin(camRotY) * cos(camRotX);
-        float dy = sin(camRotX);
-        float dz = -cos(camRotY) * cos(camRotX);
-        camera(camX, camY, camZ, camX + dx, camY + dy, camZ + dz, 0, 1, 0);
+    void applyCameraTransforms() {
+        translate(width/2 + camX, height/2 + camY, camZ);
+        rotateX(camRotX);
+        rotateY(camRotY);
     }
 
     void updateCamera() {
-        if (mousePressed && mouseButton == RIGHT) {
-            float speed = 8.0f;
-            float fx = sin(camRotY) * cos(camRotX), fy = sin(camRotX), fz = -cos(camRotY) * cos(camRotX);
-            float rx = cos(camRotY), rz = sin(camRotY);
-            float ux = -sin(camRotY) * sin(camRotX), uy = cos(camRotX), uz = cos(camRotY) * sin(camRotX);
-
-            if (keyState['w'] || keyState['W']) { camX += fx * speed; camY += fy * speed; camZ += fz * speed; }
-            if (keyState['s'] || keyState['S']) { camX -= fx * speed; camY -= fy * speed; camZ -= fz * speed; }
-            if (keyState['a'] || keyState['A']) { camX -= rx * speed; camZ -= rz * speed; }
-            if (keyState['d'] || keyState['D']) { camX += rx * speed; camZ += rz * speed; }
-            if (keyState['q'] || keyState['Q']) { camX -= ux * speed; camY -= uy * speed; camZ -= uz * speed; }
-            if (keyState['e'] || keyState['E']) { camX += ux * speed; camY += uy * speed; camZ += uz * speed; }
+        if (mousePressed && mouseButton == LEFT) {
+            float speed = 5.0f;
+            if (keyState['w'] || keyState['W']) camZ += speed;
+            if (keyState['s'] || keyState['S']) camZ -= speed;
+            if (keyState['a'] || keyState['A']) camX += speed;
+            if (keyState['d'] || keyState['D']) camX -= speed;
+            if (keyState['q'] || keyState['Q']) camY += speed;
+            if (keyState['e'] || keyState['E']) camY -= speed;
         }
     }
 
     public void draw() {
         background(20);
-        updateCamera();
-        
-        pushMatrix();
-        applyCamera();
         lights();
+        updateCamera();
+
+        pushMatrix();
+        applyCameraTransforms();
         drawGrid();
         root.update();
         root.display(this);
@@ -117,7 +92,8 @@ public class Main extends PApplet {
     }
 
     void drawGrid() {
-        stroke(50); int range = 2000, step = 40;
+        stroke(50);
+        int range = 2000, step = 40;
         for(int i = -range; i <= range; i += step) {
             line(i, -range, 0, i, range, 0);
             line(-range, i, 0, range, i, 0);
@@ -138,19 +114,20 @@ public class Main extends PApplet {
     }
 
     void drawUI() {
-        camera(); hint(PConstants.DISABLE_DEPTH_TEST);
+        camera(); 
+        hint(PConstants.DISABLE_DEPTH_TEST);
         fill(255); textSize(12);
         text("SECILI: " + (selectedNode != null ? selectedNode.name : "Yok"), 20, 25);
-        text("GEZINTI: Sag Tik + WASD (Hareket), Q/E (Yukari/Asagi), Tekerlek (Zoom) | Sag Tik + Fare (Bakis)", 20, 45);
-        text("DUZENLE: Sol Tik (Sec/Tasi), W/S (Olcek), A/D (Don), P (Pivot), L (Anim), U (Geri), DEL (Sil)", 20, 65);
-        text("EKLE: 1 (Kare), 2 (Daire), 3 (Ucgen) | R (Sifirla)", 20, 85);
+        text("GEZINTI: Sol Tik + WASD (Kamera), QE (Yukari/Asagi), Tekerlek (Zoom) | Sol Tik + Fare (Don)", 20, 45);
+        text("DUZENLE: Sag Tik (Tasi), W/S (Olcek), A/D (Don), P (Pivot), L (Anim), U (Geri), DEL (Sil), R (Sifirla)", 20, 65);
+        text("EKLE: 1 (Kare), 2 (Daire), 3 (Ucgen)", 20, 85);
         hint(PConstants.ENABLE_DEPTH_TEST);
     }
 
     public void mousePressed() {
         if (mouseButton == LEFT) {
             pushMatrix();
-            applyCamera();
+            applyCameraTransforms();
             selectedNode = findNode(root, mouseX, mouseY);
             popMatrix();
         }
@@ -181,7 +158,6 @@ public class Main extends PApplet {
                 selectedNode.parent.children.remove(selectedNode);
                 selectedNode = null;
                 saveState();
-                return;
             }
         }
 
@@ -196,26 +172,25 @@ public class Main extends PApplet {
         if (keyCode == LEFT) { selectedNode.pos.x -= 5; changed = true; }
         if (keyCode == RIGHT) { selectedNode.pos.x += 5; changed = true; }
         
-        if (!(mousePressed && mouseButton == RIGHT)) {
+        if (!(mousePressed && mouseButton == LEFT)) {
             if (key == 'w' || key == 'W') { selectedNode.scale.add(0.05f, 0.05f, 0.05f); changed = true; }
             if (key == 's' || key == 'S') { selectedNode.scale.sub(0.05f, 0.05f, 0.05f); changed = true; }
             if (key == 'a' || key == 'A') { selectedNode.rot -= 0.1f; changed = true; }
             if (key == 'd' || key == 'D') { selectedNode.rot += 0.1f; changed = true; }
         }
-
+        
         if (key == 'p' || key == 'P') {
-            pushMatrix(); applyCamera();
-            PVector wPos = getMouseWorld();
+            pushMatrix();
+            applyCameraTransforms();
+            applyMatrix(selectedNode.getGlobalMatrix());
             PMatrix3D inv = selectedNode.getGlobalMatrix();
             inv.invert();
-            selectedNode.pivot.set(inv.multX(wPos.x, wPos.y, 0), inv.multY(wPos.x, wPos.y, 0), 0);
-            popMatrix(); changed = true;
-        }
-
-        if (key == 'l' || key == 'L') {
-            selectedNode.isAnimating = !selectedNode.isAnimating;
+            selectedNode.pivot.set(inv.multX(mouseX, mouseY, 0), inv.multY(mouseX, mouseY, 0), 0);
+            popMatrix();
             changed = true;
         }
+
+        if (key == 'l' || key == 'L') { selectedNode.isAnimating = !selectedNode.isAnimating; changed = true; }
         if (key == 'u' || key == 'U') undo();
         if (changed) saveState();
     }
@@ -230,14 +205,13 @@ public class Main extends PApplet {
         SceneNode parentNode = (selectedNode != null) ? selectedNode : root;
         
         pushMatrix();
-        applyCamera(); // Ensure camera transform is active
-        PVector wPos = getMouseWorld(); // Get exact intersection on Z=0 grid
+        applyCameraTransforms();
+        applyMatrix(parentNode.getGlobalMatrix());
+        PMatrix3D totalM = new PMatrix3D();
+        getMatrix(totalM); totalM.invert();
         
-        PMatrix3D inv = parentNode.getGlobalMatrix();
-        inv.invert();
-        
-        // Convert world Z=0 pos to parent's local space
-        newNode.pos.set(inv.multX(wPos.x, wPos.y, 0), inv.multY(wPos.x, wPos.y, 0), 0);
+        PVector localPos = new PVector(totalM.multX(mouseX, mouseY, 0), totalM.multY(mouseX, mouseY, 0), 0);
+        newNode.pos.set(localPos);
         popMatrix();
 
         parentNode.addChild(newNode);
@@ -263,41 +237,27 @@ public class Main extends PApplet {
     }
 
     public void mouseDragged() {
-        if (mouseButton == RIGHT) {
-            camRotY += (mouseX - pmouseX) * 0.005f;
-            camRotX += (mouseY - pmouseY) * 0.005f;
-            camRotX = constrain(camRotX, -1.5f, 1.5f);
-        } else if (mouseButton == LEFT && selectedNode != null) {
+        if (mouseButton == LEFT) {
+            camRotY -= (mouseX - pmouseX) * 0.01f;
+            camRotX += (mouseY - pmouseY) * 0.01f;
+        } else if (mouseButton == RIGHT && selectedNode != null) {
             pushMatrix();
-            applyCamera();
-            PVector wCurr = getMouseWorld();
-            // Calculate previous mouse world position
-            int ox = mouseX, oy = mouseY;
-            mouseX = pmouseX; mouseY = pmouseY;
-            PVector wPrev = getMouseWorld();
-            mouseX = ox; mouseY = oy;
-            
-            PMatrix3D inv = new PMatrix3D();
-            if (selectedNode.parent != null) inv = selectedNode.parent.getGlobalMatrix();
-            inv.invert();
-            
-            // Delta in local space
-            float dx = inv.multX(wCurr.x, wCurr.y, 0) - inv.multX(wPrev.x, wPrev.y, 0);
-            float dy = inv.multY(wCurr.x, wCurr.y, 0) - inv.multY(wPrev.x, wPrev.y, 0);
-            
-            selectedNode.pos.x += dx;
-            selectedNode.pos.y += dy;
+            applyCameraTransforms();
+            if (selectedNode.parent != null) applyMatrix(selectedNode.parent.getGlobalMatrix());
+            PMatrix3D totalM = new PMatrix3D();
+            getMatrix(totalM); totalM.invert();
+            float x1 = totalM.multX(pmouseX, pmouseY, 0), y1 = totalM.multY(pmouseX, pmouseY, 0);
+            float x2 = totalM.multX(mouseX, mouseY, 0), y2 = totalM.multY(mouseX, mouseY, 0);
+            selectedNode.pos.x += (x2 - x1); selectedNode.pos.y += (y2 - y1);
             popMatrix();
         }
     }
 
     public void mouseReleased() {
-        if (mouseButton == LEFT) saveState();
+        saveState();
     }
 
     public void mouseWheel(MouseEvent event) {
-        float e = event.getCount();
-        float fx = sin(camRotY) * cos(camRotX), fy = sin(camRotX), fz = -cos(camRotY) * cos(camRotX);
-        camX += fx * e * 30; camY += fy * e * 30; camZ += fz * e * 30;
+        camZ -= event.getCount() * 30;
     }
 }
