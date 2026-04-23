@@ -10,7 +10,7 @@ public class Main extends PApplet {
     SceneNode selectedNode;
     Stack<SceneNode> undoStack = new Stack<>();
     
-    // Kamera Degiskenleri (Fly-Cam)
+    // Camera Variables
     float camX = 0, camY = 0, camZ = 500;
     float camRotY = 0; 
     float camRotX = 0; 
@@ -33,7 +33,7 @@ public class Main extends PApplet {
 
     void resetScene() {
         camX = 0; camY = 0; camZ = 500;
-        camRotX = 0; camRotY = 0;
+        camRotX = PI/6; camRotY = 0;
         root = new SceneNode();
         root.name = "Root";
 
@@ -59,6 +59,7 @@ public class Main extends PApplet {
         saveState();
     }
 
+    // Converts Screen Mouse Pixels to World Z=0 Coordinates
     PVector getMouseWorld() {
         PGraphics3D p3d = (PGraphics3D) g;
         PMatrix3D combined = p3d.projection.get();
@@ -66,11 +67,12 @@ public class Main extends PApplet {
         combined.invert();
 
         float xNDC = map(mouseX, 0, width, -1, 1);
-        float yNDC = map(mouseY, 0, height, -1, 1);
+        float yNDC = map(mouseY, 0, height, 1, -1); // Corrected Y-flip for NDC
 
         PVector n = combined.mult(new PVector(xNDC, yNDC, -1), null);
         PVector f = combined.mult(new PVector(xNDC, yNDC, 1), null);
 
+        // Line-Plane (Z=0) Intersection
         float t = -n.z / (f.z - n.z);
         return new PVector(n.x + t * (f.x - n.x), n.y + t * (f.y - n.y), 0);
     }
@@ -139,7 +141,7 @@ public class Main extends PApplet {
         camera(); hint(PConstants.DISABLE_DEPTH_TEST);
         fill(255); textSize(12);
         text("SECILI: " + (selectedNode != null ? selectedNode.name : "Yok"), 20, 25);
-        text("GEZINTI: Sag Tik + WASD (Bakis), Q/E (Yukari/Asagi), Tekerlek (Zoom)", 20, 45);
+        text("GEZINTI: Sag Tik + WASD (Hareket), Q/E (Yukari/Asagi), Tekerlek (Zoom) | Sag Tik + Fare (Bakis)", 20, 45);
         text("DUZENLE: Sol Tik (Sec/Tasi), W/S (Olcek), A/D (Don), P (Pivot), L (Anim), U (Geri), DEL (Sil)", 20, 65);
         text("EKLE: 1 (Kare), 2 (Daire), 3 (Ucgen) | R (Sifirla)", 20, 85);
         hint(PConstants.ENABLE_DEPTH_TEST);
@@ -227,11 +229,15 @@ public class Main extends PApplet {
         ShapeNode newNode = new ShapeNode("Yeni " + type, type, 50, 50, c);
         SceneNode parentNode = (selectedNode != null) ? selectedNode : root;
         
-        pushMatrix(); applyCamera();
-        PVector worldPos = getMouseWorld();
+        pushMatrix();
+        applyCamera(); // Ensure camera transform is active
+        PVector wPos = getMouseWorld(); // Get exact intersection on Z=0 grid
+        
         PMatrix3D inv = parentNode.getGlobalMatrix();
         inv.invert();
-        newNode.pos.set(inv.multX(worldPos.x, worldPos.y, 0), inv.multY(worldPos.x, worldPos.y, 0), 0);
+        
+        // Convert world Z=0 pos to parent's local space
+        newNode.pos.set(inv.multX(wPos.x, wPos.y, 0), inv.multY(wPos.x, wPos.y, 0), 0);
         popMatrix();
 
         parentNode.addChild(newNode);
@@ -258,12 +264,14 @@ public class Main extends PApplet {
 
     public void mouseDragged() {
         if (mouseButton == RIGHT) {
-            camRotY -= (mouseX - pmouseX) * 0.005f;
+            camRotY += (mouseX - pmouseX) * 0.005f;
             camRotX += (mouseY - pmouseY) * 0.005f;
-            camRotX = constrain(camRotX, -HALF_PI + 0.01f, HALF_PI - 0.01f);
+            camRotX = constrain(camRotX, -1.5f, 1.5f);
         } else if (mouseButton == LEFT && selectedNode != null) {
-            pushMatrix(); applyCamera();
+            pushMatrix();
+            applyCamera();
             PVector wCurr = getMouseWorld();
+            // Calculate previous mouse world position
             int ox = mouseX, oy = mouseY;
             mouseX = pmouseX; mouseY = pmouseY;
             PVector wPrev = getMouseWorld();
@@ -273,6 +281,7 @@ public class Main extends PApplet {
             if (selectedNode.parent != null) inv = selectedNode.parent.getGlobalMatrix();
             inv.invert();
             
+            // Delta in local space
             float dx = inv.multX(wCurr.x, wCurr.y, 0) - inv.multX(wPrev.x, wPrev.y, 0);
             float dy = inv.multY(wCurr.x, wCurr.y, 0) - inv.multY(wPrev.x, wPrev.y, 0);
             
