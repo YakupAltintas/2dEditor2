@@ -65,7 +65,6 @@ public class Main extends PApplet {
     }
 
     void updateCamera() {
-        // Gezinti kontrolleri SAG TIK'a tasindi
         if (mousePressed && mouseButton == RIGHT) {
             float speed = 8.0f;
             float fx = sin(camRotY) * cos(camRotX);
@@ -133,7 +132,6 @@ public class Main extends PApplet {
     }
 
     public void mousePressed() {
-        // Secim islemi SAG TIK'a tasindi
         if (mouseButton == RIGHT) {
             pushMatrix();
             applyCamera();
@@ -182,7 +180,6 @@ public class Main extends PApplet {
         if (keyCode == LEFT) { selectedNode.pos.x -= 5; changed = true; }
         if (keyCode == RIGHT) { selectedNode.pos.x += 5; changed = true; }
         
-        // Edit Mode (Sadece SAG TIK basili degilken)
         if (!(mousePressed && mouseButton == RIGHT)) {
             if (key == 'w' || key == 'W') { selectedNode.scale.add(0.05f, 0.05f, 0.05f); changed = true; }
             if (key == 's' || key == 'S') { selectedNode.scale.sub(0.05f, 0.05f, 0.05f); changed = true; }
@@ -218,14 +215,13 @@ public class Main extends PApplet {
         
         pushMatrix();
         applyCamera();
-        PMatrix3D inv = new PMatrix3D();
-        getMatrix(inv);
-        inv.preApply(parentNode.getGlobalMatrix());
-        inv.invert();
+        applyMatrix(parentNode.getGlobalMatrix());
         
-        PVector localPos = new PVector(inv.multX(mouseX, mouseY, 0), inv.multY(mouseX, mouseY, 0), 0);
-        if (parentNode != root) localPos.limit(120);
-        newNode.pos.set(localPos);
+        PMatrix3D totalM = new PMatrix3D();
+        getMatrix(totalM); 
+        totalM.invert();
+        
+        newNode.pos.set(totalM.multX(mouseX, mouseY, 0), totalM.multY(mouseX, mouseY, 0), totalM.multZ(mouseX, mouseY, 0));
         popMatrix();
 
         parentNode.addChild(newNode);
@@ -252,12 +248,10 @@ public class Main extends PApplet {
 
     public void mouseDragged() {
         if (mouseButton == RIGHT) {
-            // SAG TIK: Kamera Kontrolleri
-            camRotY += (mouseX - pmouseX) * 0.005f;
+            camRotY -= (mouseX - pmouseX) * 0.005f;
             camRotX += (mouseY - pmouseY) * 0.005f;
-            camRotX = constrain(camRotX, -1.5f, 1.5f);
+            camRotX = constrain(camRotX, -HALF_PI + 0.01f, HALF_PI - 0.01f);
         } else if (mouseButton == LEFT && selectedNode != null) {
-            // SOL TIK: Nesne Tasima
             pushMatrix();
             applyCamera();
             if (selectedNode.parent != null) applyMatrix(selectedNode.parent.getGlobalMatrix());
