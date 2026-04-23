@@ -8,8 +8,9 @@ public class Main extends PApplet {
     SceneNode selectedNode;
     Stack<SceneNode> undoStack = new Stack<>();
     
-    float camX = 0, camY = 0, camZ = 400;
-    float camRotY = 0, camRotX = PI/6;
+    // Kamera Degiskenleri (Fly-Cam)
+    float camX = 0, camY = 0, camZ = 500;
+    float camRotY = 0, camRotX = 0;
     boolean[] keyState = new boolean[1024];
     
     public static void main(String[] args) {
@@ -28,8 +29,8 @@ public class Main extends PApplet {
     }
 
     void resetScene() {
-        camX = 0; camY = 0; camZ = 400;
-        camRotX = PI/6; camRotY = 0;
+        camX = 0; camY = 0; camZ = 500;
+        camRotX = 0; camRotY = 0;
         root = new SceneNode();
         root.name = "Root";
 
@@ -55,46 +56,50 @@ public class Main extends PApplet {
         saveState();
     }
 
+    void applyCamera() {
+        // Bakis yonu vektoru hesaplama
+        float centerX = camX + sin(camRotY) * cos(camRotX);
+        float centerY = camY + sin(camRotX);
+        float centerZ = camZ - cos(camRotY) * cos(camRotX);
+        
+        // Kamerayi dunya orijinine gore yerlestir
+        camera(camX, camY, camZ, centerX, centerY, centerZ, 0, 1, 0);
+    }
+
     void updateCamera() {
         if (mousePressed && mouseButton == LEFT) {
             float speed = 5.0f;
+            // Bakis yonune gore ileri/sag vektorleri
             float fx = sin(camRotY) * cos(camRotX);
             float fy = -sin(camRotX);
             float fz = -cos(camRotY) * cos(camRotX);
             float rx = cos(camRotY);
             float rz = sin(camRotY);
-            float ux = sin(camRotY) * sin(camRotX);
-            float uy = cos(camRotX);
-            float uz = -cos(camRotY) * sin(camRotX);
 
             if (keyState['w'] || keyState['W']) { camX += fx * speed; camY += fy * speed; camZ += fz * speed; }
             if (keyState['s'] || keyState['S']) { camX -= fx * speed; camY -= fy * speed; camZ -= fz * speed; }
             if (keyState['a'] || keyState['A']) { camX -= rx * speed; camZ -= rz * speed; }
             if (keyState['d'] || keyState['D']) { camX += rx * speed; camZ += rz * speed; }
-            if (keyState['q'] || keyState['Q']) { camX += ux * speed; camY += uy * speed; camZ += uz * speed; }
-            if (keyState['e'] || keyState['E']) { camX -= ux * speed; camY -= uy * speed; camZ -= uz * speed; }
+            if (keyState['q'] || keyState['Q']) camY += speed;
+            if (keyState['e'] || keyState['E']) camY -= speed;
         }
-    }
-
-    void applyCameraTransforms() {
-        translate(width/2, height/2, 0);
-        rotateY(camRotY); // Yaw first for stable horizon
-        rotateX(camRotX);
-        translate(-camX, -camY, -camZ);
     }
 
     public void draw() {
         background(20);
-        lights();
         updateCamera();
-
+        
+        // 3D Sahne Cizimi
         pushMatrix();
-        applyCameraTransforms();
+        applyCamera();
+        lights();
         drawGrid();
         root.update();
         root.display(this);
         drawSelectionHighlight();
         popMatrix();
+        
+        // 2D Arayuz Cizimi
         drawUI();
     }
 
@@ -121,10 +126,11 @@ public class Main extends PApplet {
     }
 
     void drawUI() {
+        camera(); // Kamera matrisini UI icin sifirla
         hint(PConstants.DISABLE_DEPTH_TEST);
         fill(255); textSize(12);
         text("SECILI: " + (selectedNode != null ? selectedNode.name : "Yok"), 20, 25);
-        text("GEZINTI: Sol Tik + WASD (Bakis Yonu), QE (Yukari/Asagi) | Sol Tik + Surukle (Dondur)", 20, 45);
+        text("GEZINTI: Sol Tik + WASD (Bakis Yonu), QE (Yukari/Asagi) | Sol Tik + Surukle (Bakis Acisi)", 20, 45);
         text("DUZENLE: Sag Tik/Oklar (Tasi), W/S (Olcek), A/D (Don), P (Pivot), L (Anim), U (Geri), DEL (Sil), R (Sifirla)", 20, 65);
         text("EKLE: 1 (Kare), 2 (Daire), 3 (Ucgen)", 20, 85);
         hint(PConstants.ENABLE_DEPTH_TEST);
@@ -133,7 +139,7 @@ public class Main extends PApplet {
     public void mousePressed() {
         if (mouseButton == LEFT) {
             pushMatrix();
-            applyCameraTransforms();
+            applyCamera();
             selectedNode = findNode(root, mouseX, mouseY);
             popMatrix();
         }
@@ -187,7 +193,7 @@ public class Main extends PApplet {
         
         if (key == 'p' || key == 'P') {
             pushMatrix();
-            applyCameraTransforms();
+            applyCamera();
             applyMatrix(selectedNode.getGlobalMatrix());
             PMatrix3D totalM = new PMatrix3D();
             getMatrix(totalM); totalM.invert();
@@ -211,7 +217,7 @@ public class Main extends PApplet {
         SceneNode parentNode = (selectedNode != null) ? selectedNode : root;
         
         pushMatrix();
-        applyCameraTransforms();
+        applyCamera();
         applyMatrix(parentNode.getGlobalMatrix());
         
         PMatrix3D totalM = new PMatrix3D();
@@ -246,11 +252,14 @@ public class Main extends PApplet {
 
     public void mouseDragged() {
         if (mouseButton == LEFT) {
-            camRotY -= (mouseX - pmouseX) * 0.01f;
-            camRotX += (mouseY - pmouseY) * 0.01f;
+            // Sol Tik: Kameranin kendi ekseni etrafinda donmesi (Bakis Acisi)
+            camRotY -= (mouseX - pmouseX) * 0.005f;
+            camRotX += (mouseY - pmouseY) * 0.005f;
+            camRotX = constrain(camRotX, -HALF_PI + 0.01f, HALF_PI - 0.01f); // Gimbal lock onleme
         } else if (mouseButton == RIGHT && selectedNode != null) {
+            // Sag Tik: Nesne Tasima
             pushMatrix();
-            applyCameraTransforms();
+            applyCamera();
             if (selectedNode.parent != null) applyMatrix(selectedNode.parent.getGlobalMatrix());
             PMatrix3D totalM = new PMatrix3D();
             getMatrix(totalM); totalM.invert();
