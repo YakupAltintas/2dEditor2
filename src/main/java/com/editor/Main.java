@@ -151,6 +151,14 @@ public class Main extends PApplet {
         text("GEZINTI: Sag Tik + WASD (Bakis), Q/E (Yukari/Asagi), Tekerlek (Zoom)", 20, 45);
         text("DUZENLE: Sol Tik (Sec/Tasi), W/S (Olcek), A/D (Don), P (Pivot), L (Anim), U (Geri), DEL (Sil)", 20, 65);
         text("EKLE: 1 (Kare), 2 (Daire), 3 (Ucgen) | R (Sifirla)", 20, 85);
+
+        if (selectedNode != null) {
+            PMatrix3D m = selectedNode.getLocalMatrix();
+            text("3D MATRIS (Rotasyon/Olcek):", 20, 115);
+            text(String.format("[%.2f, %.2f, %.2f]", m.m00, m.m01, m.m02), 20, 135);
+            text(String.format("[%.2f, %.2f, %.2f]", m.m10, m.m11, m.m12), 20, 155);
+            text(String.format("[%.2f, %.2f, %.2f]", m.m20, m.m21, m.m22), 20, 175);
+        }
         hint(PConstants.ENABLE_DEPTH_TEST);
     }
 
