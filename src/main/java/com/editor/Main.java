@@ -86,8 +86,8 @@ public class Main extends PApplet {
 
     void applyCameraTransforms() {
         translate(width/2, height/2, 0);
-        rotateX(camRotX);
-        rotateY(camRotY);
+        rotateY(camRotY); // Yaw applied first to keep Y axis vertical
+        rotateX(camRotX); // Then Pitch
         translate(-camX, -camY, -camZ);
     }
 
@@ -140,6 +140,7 @@ public class Main extends PApplet {
     }
 
     public void mousePressed() {
+        // Selection hit-test with updated rotation order
         if (mouseButton == LEFT) {
             pushMatrix();
             applyCameraTransforms();
