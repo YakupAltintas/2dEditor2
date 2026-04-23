@@ -8,9 +8,8 @@ public class Main extends PApplet {
     SceneNode selectedNode;
     Stack<SceneNode> undoStack = new Stack<>();
     
-    // Kamera: Dunya koordinatlarindaki konum ve bakis acilari
     float camX = 0, camY = 0, camZ = 400;
-    float camRotY = 0, camRotX = 0;
+    float camRotY = 0, camRotX = PI/6;
     boolean[] keyState = new boolean[1024];
     
     public static void main(String[] args) {
@@ -30,7 +29,7 @@ public class Main extends PApplet {
 
     void resetScene() {
         camX = 0; camY = 0; camZ = 400;
-        camRotX = 0; camRotY = 0;
+        camRotX = PI/6; camRotY = 0;
         root = new SceneNode();
         root.name = "Root";
 
@@ -56,21 +55,14 @@ public class Main extends PApplet {
         saveState();
     }
 
-    // Kamerayi bakis acisina gore hareket ettirir (3D Fly-Cam)
     void updateCamera() {
         if (mousePressed && mouseButton == LEFT) {
             float speed = 5.0f;
-            
-            // İleri Vektörü (Forward)
             float fx = sin(camRotY) * cos(camRotX);
             float fy = -sin(camRotX);
             float fz = -cos(camRotY) * cos(camRotX);
-            
-            // Sağ Vektörü (Right)
             float rx = cos(camRotY);
             float rz = sin(camRotY);
-            
-            // Yukarı Vektörü (Up)
             float ux = sin(camRotY) * sin(camRotX);
             float uy = cos(camRotX);
             float uz = -cos(camRotY) * sin(camRotX);
@@ -86,8 +78,8 @@ public class Main extends PApplet {
 
     void applyCameraTransforms() {
         translate(width/2, height/2, 0);
-        rotateY(camRotY); // Yaw applied first to keep Y axis vertical
-        rotateX(camRotX); // Then Pitch
+        rotateY(camRotY); // Yaw first for stable horizon
+        rotateX(camRotX);
         translate(-camX, -camY, -camZ);
     }
 
@@ -103,7 +95,6 @@ public class Main extends PApplet {
         root.display(this);
         drawSelectionHighlight();
         popMatrix();
-        
         drawUI();
     }
 
@@ -133,14 +124,13 @@ public class Main extends PApplet {
         hint(PConstants.DISABLE_DEPTH_TEST);
         fill(255); textSize(12);
         text("SECILI: " + (selectedNode != null ? selectedNode.name : "Yok"), 20, 25);
-        text("GEZINTI: Sol Tik + WASD (Bakisa Gore Hareket), QE (Yukari/Asagi)", 20, 45);
+        text("GEZINTI: Sol Tik + WASD (Bakis Yonu), QE (Yukari/Asagi) | Sol Tik + Surukle (Dondur)", 20, 45);
         text("DUZENLE: Sag Tik/Oklar (Tasi), W/S (Olcek), A/D (Don), P (Pivot), L (Anim), U (Geri), DEL (Sil), R (Sifirla)", 20, 65);
         text("EKLE: 1 (Kare), 2 (Daire), 3 (Ucgen)", 20, 85);
         hint(PConstants.ENABLE_DEPTH_TEST);
     }
 
     public void mousePressed() {
-        // Selection hit-test with updated rotation order
         if (mouseButton == LEFT) {
             pushMatrix();
             applyCameraTransforms();
@@ -199,9 +189,9 @@ public class Main extends PApplet {
             pushMatrix();
             applyCameraTransforms();
             applyMatrix(selectedNode.getGlobalMatrix());
-            PMatrix3D inv = selectedNode.getGlobalMatrix();
-            inv.invert();
-            selectedNode.pivot.set(inv.multX(mouseX, mouseY, 0), inv.multY(mouseX, mouseY, 0), 0);
+            PMatrix3D totalM = new PMatrix3D();
+            getMatrix(totalM); totalM.invert();
+            selectedNode.pivot.set(totalM.multX(mouseX, mouseY, 0), totalM.multY(mouseX, mouseY, 0), 0);
             popMatrix();
             changed = true;
         }
@@ -256,7 +246,6 @@ public class Main extends PApplet {
 
     public void mouseDragged() {
         if (mouseButton == LEFT) {
-            // Kamera dondurme (Yatay ve Dikey) - Yonler duzeltildi
             camRotY -= (mouseX - pmouseX) * 0.01f;
             camRotX += (mouseY - pmouseY) * 0.01f;
         } else if (mouseButton == RIGHT && selectedNode != null) {
