@@ -1,6 +1,7 @@
 package com.editor;
 
 import processing.core.*;
+import processing.event.MouseEvent;
 import java.util.*;
 
 public class Main extends PApplet {
@@ -126,7 +127,7 @@ public class Main extends PApplet {
         hint(PConstants.DISABLE_DEPTH_TEST);
         fill(255); textSize(12);
         text("SECILI: " + (selectedNode != null ? selectedNode.name : "Yok"), 20, 25);
-        text("GEZINTI: Sag Tik + WASD (Bakis Yonu), QE (Yukari/Asagi) | Sag Tik + Fare (Bakis Acisi)", 20, 45);
+        text("GEZINTI: Sag Tik + WASD (Bakis Yonu), QE (Yukari/Asagi), Tekerlek (Zoom) | Sag Tik + Fare (Bakis Acisi)", 20, 45);
         text("DUZENLE: Sol Tik (Sec/Tasi), W/S (Olcek), A/D (Don), P (Pivot), L (Anim), U (Geri), DEL (Sil), R (Sifirla)", 20, 65);
         text("EKLE: 1 (Kare), 2 (Daire), 3 (Ucgen)", 20, 85);
         hint(PConstants.ENABLE_DEPTH_TEST);
@@ -270,5 +271,19 @@ public class Main extends PApplet {
 
     public void mouseReleased() {
         if (mouseButton == LEFT) saveState();
+    }
+
+    public void mouseWheel(MouseEvent event) {
+        float e = event.getCount();
+        float speed = 30.0f;
+        
+        // Bakis yonune (Forward) gore zoom
+        float fx = sin(camRotY) * cos(camRotX);
+        float fy = sin(camRotX);
+        float fz = -cos(camRotY) * cos(camRotX);
+
+        camX += fx * e * speed;
+        camY += fy * e * speed;
+        camZ += fz * e * speed;
     }
 }
