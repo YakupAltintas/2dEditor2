@@ -57,7 +57,7 @@ public class Main extends PApplet {
     }
 
     void applyCamera() {
-        // Bakis yonu vektoru hesaplama
+        // Bakis yonu vektoru (Look-At Vector)
         float dx = sin(camRotY) * cos(camRotX);
         float dy = sin(camRotX);
         float dz = -cos(camRotY) * cos(camRotX);
@@ -69,22 +69,22 @@ public class Main extends PApplet {
         if (mousePressed && mouseButton == LEFT) {
             float speed = 6.0f;
             
-            // Mevcut bakis yonune (Gaze) gore ileri vektoru
+            // Bakis yonune gore hareket vektorleri
             float fx = sin(camRotY) * cos(camRotX);
             float fy = sin(camRotX);
             float fz = -cos(camRotY) * cos(camRotX);
             
-            // Sag vektor (Bakis yonune dik)
+            // Sag vektor (Yatay duzlemde)
             float rx = cos(camRotY);
             float rz = sin(camRotY);
 
-            // WASD: Bakis yonune gore hareket
+            // WASD: Bakis yonune gore ileri/geri ve saga/sola
             if (keyState['w'] || keyState['W']) { camX += fx * speed; camY += fy * speed; camZ += fz * speed; }
             if (keyState['s'] || keyState['S']) { camX -= fx * speed; camY -= fy * speed; camZ -= fz * speed; }
             if (keyState['a'] || keyState['A']) { camX -= rx * speed; camZ -= rz * speed; }
             if (keyState['d'] || keyState['D']) { camX += rx * speed; camZ += rz * speed; }
             
-            // QE: Dunya dikey ekseninde hareket (Q: Yukari, E: Asagi)
+            // QE: Dikey eksende mutlak hareket
             if (keyState['q'] || keyState['Q']) camY -= speed;
             if (keyState['e'] || keyState['E']) camY += speed;
         }
@@ -94,6 +94,7 @@ public class Main extends PApplet {
         background(20);
         updateCamera();
         
+        // 3D Rendering
         pushMatrix();
         applyCamera();
         lights();
@@ -103,6 +104,7 @@ public class Main extends PApplet {
         drawSelectionHighlight();
         popMatrix();
         
+        // 2D Overlay
         drawUI();
     }
 
@@ -129,7 +131,7 @@ public class Main extends PApplet {
     }
 
     void drawUI() {
-        camera(); // UI icin matrisi sifirla
+        camera(); // Reset camera for 2D
         hint(PConstants.DISABLE_DEPTH_TEST);
         fill(255); textSize(12);
         text("SECILI: " + (selectedNode != null ? selectedNode.name : "Yok"), 20, 25);
@@ -188,6 +190,7 @@ public class Main extends PApplet {
         if (keyCode == LEFT) { selectedNode.pos.x -= 5; changed = true; }
         if (keyCode == RIGHT) { selectedNode.pos.x += 5; changed = true; }
         
+        // Edit Mode (W/A/S/D used for Camera when Left Click is down)
         if (!(mousePressed && mouseButton == LEFT)) {
             if (key == 'w' || key == 'W') { selectedNode.scale.add(0.05f, 0.05f, 0.05f); changed = true; }
             if (key == 's' || key == 'S') { selectedNode.scale.sub(0.05f, 0.05f, 0.05f); changed = true; }
@@ -198,7 +201,9 @@ public class Main extends PApplet {
         if (key == 'p' || key == 'P') {
             pushMatrix();
             applyCamera();
-            PMatrix3D inv = selectedNode.getGlobalMatrix();
+            PMatrix3D inv = new PMatrix3D();
+            getMatrix(inv);
+            inv.preApply(selectedNode.getGlobalMatrix());
             inv.invert();
             selectedNode.pivot.set(inv.multX(mouseX, mouseY, 0), inv.multY(mouseX, mouseY, 0), 0);
             popMatrix();
@@ -221,11 +226,12 @@ public class Main extends PApplet {
         
         pushMatrix();
         applyCamera();
-        applyMatrix(parentNode.getGlobalMatrix());
-        PMatrix3D totalM = new PMatrix3D();
-        getMatrix(totalM); totalM.invert();
+        PMatrix3D inv = new PMatrix3D();
+        getMatrix(inv);
+        inv.preApply(parentNode.getGlobalMatrix());
+        inv.invert();
         
-        PVector localPos = new PVector(totalM.multX(mouseX, mouseY, 0), totalM.multY(mouseX, mouseY, 0), 0);
+        PVector localPos = new PVector(inv.multX(mouseX, mouseY, 0), inv.multY(mouseX, mouseY, 0), 0);
         if (parentNode != root) localPos.limit(120);
         newNode.pos.set(localPos);
         popMatrix();
@@ -254,12 +260,12 @@ public class Main extends PApplet {
 
     public void mouseDragged() {
         if (mouseButton == LEFT) {
-            // Bakis Acisi (Yaw & Pitch) - Yonler dogallastirildi
+            // Look Around (Non-Inverted)
             camRotY += (mouseX - pmouseX) * 0.005f;
             camRotX += (mouseY - pmouseY) * 0.005f;
             camRotX = constrain(camRotX, -HALF_PI + 0.01f, HALF_PI - 0.01f);
         } else if (mouseButton == RIGHT && selectedNode != null) {
-            // Nesne Tasima
+            // Object Translation
             pushMatrix();
             applyCamera();
             if (selectedNode.parent != null) applyMatrix(selectedNode.parent.getGlobalMatrix());
