@@ -8,7 +8,7 @@ public class Main extends PApplet {
     SceneNode selectedNode;
     Stack<SceneNode> undoStack = new Stack<>();
     
-    // Kamera Degiskenleri (Fly-Cam)
+    // Kamera Degiskenleri
     float camX = 0, camY = 0, camZ = 500;
     float camRotY = 0; 
     float camRotX = 0; 
@@ -65,6 +65,7 @@ public class Main extends PApplet {
     }
 
     void updateCamera() {
+        // Gezinti kontrolleri SAG TIK ile tetiklenir
         if (mousePressed && mouseButton == RIGHT) {
             float speed = 8.0f;
             float fx = sin(camRotY) * cos(camRotX);
@@ -126,13 +127,13 @@ public class Main extends PApplet {
         fill(255); textSize(12);
         text("SECILI: " + (selectedNode != null ? selectedNode.name : "Yok"), 20, 25);
         text("GEZINTI: Sag Tik + WASD (Bakis Yonu), QE (Yukari/Asagi) | Sag Tik + Fare (Bakis Acisi)", 20, 45);
-        text("DUZENLE: Sol Tik (Tasi), W/S (Olcek), A/D (Don), P (Pivot), L (Anim), U (Geri), DEL (Sil), R (Sifirla)", 20, 65);
+        text("DUZENLE: Sol Tik (Sec/Tasi), W/S (Olcek), A/D (Don), P (Pivot), L (Anim), U (Geri), DEL (Sil), R (Sifirla)", 20, 65);
         text("EKLE: 1 (Kare), 2 (Daire), 3 (Ucgen)", 20, 85);
         hint(PConstants.ENABLE_DEPTH_TEST);
     }
 
     public void mousePressed() {
-        // Nesne secimi artik SOL TIK ile yapilir
+        // Secim islemi artik SOL TIK ile yapilir
         if (mouseButton == LEFT) {
             pushMatrix();
             applyCamera();
@@ -181,6 +182,7 @@ public class Main extends PApplet {
         if (keyCode == LEFT) { selectedNode.pos.x -= 5; changed = true; }
         if (keyCode == RIGHT) { selectedNode.pos.x += 5; changed = true; }
         
+        // Edit Mode (Sadece SAG TIK basili degilken)
         if (!(mousePressed && mouseButton == RIGHT)) {
             if (key == 'w' || key == 'W') { selectedNode.scale.add(0.05f, 0.05f, 0.05f); changed = true; }
             if (key == 's' || key == 'S') { selectedNode.scale.sub(0.05f, 0.05f, 0.05f); changed = true; }
@@ -216,13 +218,12 @@ public class Main extends PApplet {
         
         pushMatrix();
         applyCamera();
-        applyMatrix(parentNode.getGlobalMatrix());
+        PMatrix3D inv = new PMatrix3D();
+        getMatrix(inv);
+        inv.preApply(parentNode.getGlobalMatrix());
+        inv.invert();
         
-        PMatrix3D totalM = new PMatrix3D();
-        getMatrix(totalM); 
-        totalM.invert();
-        
-        newNode.pos.set(totalM.multX(mouseX, mouseY, 0), totalM.multY(mouseX, mouseY, 0), totalM.multZ(mouseX, mouseY, 0));
+        newNode.pos.set(inv.multX(mouseX, mouseY, 0), inv.multY(mouseX, mouseY, 0), inv.multZ(mouseX, mouseY, 0));
         popMatrix();
 
         parentNode.addChild(newNode);
@@ -249,10 +250,12 @@ public class Main extends PApplet {
 
     public void mouseDragged() {
         if (mouseButton == RIGHT) {
+            // SAG TIK: Kamera Kontrolleri (Bakis Acisi)
             camRotY -= (mouseX - pmouseX) * 0.005f;
             camRotX += (mouseY - pmouseY) * 0.005f;
             camRotX = constrain(camRotX, -HALF_PI + 0.01f, HALF_PI - 0.01f);
         } else if (mouseButton == LEFT && selectedNode != null) {
+            // SOL TIK: Nesne Tasima
             pushMatrix();
             applyCamera();
             if (selectedNode.parent != null) applyMatrix(selectedNode.parent.getGlobalMatrix());
